@@ -1,26 +1,42 @@
 ﻿using Graphing.Position.Generic;
+using Graphing.Planet;
+using System.Collections.Generic;
+
 namespace Graphing.Planet
 {
     public class PlanetGraph
-        : GenericPositionGraph<PlanetGraph, PlanetPolygonPartition, PlanetNodePartition, PlanetPolygon, PlanetHalfEdge, PlanetNode>
+        : PositionGraph<PlanetPoly, PlanetEdge, PlanetNode>
     {
-
-        //Mostly to make life easy for everyone
-        public class PlanetGraphSerializer : GenericPositionGraphSerializer<PlanetPolygonPartition.GenericPolygonPartitionSerializer, PlanetNodePartition.GenericNodePartitionSerializer, PlanetPolygon.PlanetPolygonSerializer, PlanetHalfEdge.GenericHalfEdgeSerializer, PlanetNode.GenericPositionNodeSerializer>
+        public PlanetGraph(int nodeCapacity = 0, int edgeCapacity = 0, int polyCapacity = 0, int partitionSize = 1) : base(nodeCapacity, edgeCapacity, polyCapacity)
         {
-            public PlanetGraphSerializer(PlanetGraph graph, string fName, string fDirectory = null, string fExtension = null) : base(graph, fName, fDirectory, fExtension)
+            PartitionSize = (partitionSize > 0 ? partitionSize : 1);
+            Partitions = new List<PlanetPartition>(nodeCapacity / PartitionSize + (nodeCapacity % PartitionSize > 0 ? 1 : 0));
+        }
+        private int PartitionSize { get; set; }
+        public PlateGraph PlateGraph { get; set; }
+        public IList<PlanetPartition> Partitions
+        {
+            get;
+            internal set;
+        }
+        internal override void LoadDual<GraphT>(GraphT data)
+        {
+            base.LoadDual(data);
+            Partitions.Clear();
+            int count = data.Polys.Count / PartitionSize + (data.Polys.Count % PartitionSize > 0 ? 1 : 0);
+            for (int i = 0; i < count; i++)
             {
+                PlanetPartition partition = new PlanetPartition(PartitionSize);
+                for (int j = 0; j < PartitionSize; j++)
+                {
+                    int polyId = i * PartitionSize + j;
+                    if (polyId > data.Polys.Count)
+                        break;
+                    partition.Add(Polys[polyId]);
+                }
+                Partitions.Add(partition);
             }
         }
-        //Mostly to make life easy for everyone
-        public class PlanetGraphBuilder : GenericPositionGraphBuilder<PlanetPolygonPartition.GenericPolygonPartitionBuilder, PlanetNodePartition.GenericNodePartitionBuilder, PlanetPolygon.PlanetPolygonBuilder, PlanetHalfEdge.GenericHalfEdgeBuilder, PlanetNode.GenericPositionNodeBuilder>
-        {
-        }
-        public PlanetGraph() : base()
-        {
-        }
-        public PlanetGraph(PlanetNode[] nodes, PlanetPolygon[] polygons, PlanetHalfEdge[] edges, PlanetNodePartition[] nodePartititons, PlanetPolygonPartition[] polyPartititons) : base(nodes, polygons, edges, nodePartititons, polyPartititons)
-        {
-        }
     }
+
 }

@@ -39,7 +39,7 @@ public class ProceduralMeshBuilder
         Triangles.Add(triangle);
     }
 
-    internal List<ProceduralMeshBuilder> CreateSubmeshes()
+    internal virtual List<ProceduralMeshBuilder> CreateSubmeshes()
     {
         int estimatedChunks = Mathf.CeilToInt((float)Verticies.Count / ushort.MaxValue);
         List<ProceduralMeshBuilder> Chunks = new List<ProceduralMeshBuilder>(estimatedChunks);
@@ -122,14 +122,18 @@ public class ProceduralMeshBuilder
 
         //mesh.Update(positions, uvs[0], uvs[1], uvs[2], uvs[3], normals, tangents, colors, triangles);
 
-        mesh.CompileFromSubmeshes(this.CreateSubmeshes());// (Verticies, Triangles);
+        mesh.CompileFromSubmeshes(CreateSubmeshes());// (Verticies, Triangles);
 
         return mesh;
     }
 
-    public void Clear()
+    protected void ClearMeshBuilder()
     {
         Verticies.Clear();
         Triangles.Clear();
+    }
+    public virtual void Clear()
+    {
+        ClearMeshBuilder();
     }
 }

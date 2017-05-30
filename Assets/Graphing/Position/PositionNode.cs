@@ -1,18 +1,11 @@
-﻿using UnityEngine;
-namespace Graphing.Position
+﻿namespace Graphing.Position
 {
-    using Position.Generic;
+    using Generic;
     public class PositionNode
-        : GenericPositionNode<PositionGraph, PositionPolygonPartition, PositionNodePartition, PositionPolygon, PositionHalfEdge, PositionNode>
+        : PositionNode<PositionPoly, PositionEdge, PositionNode>
     {
         public PositionNode() : base()
         {
         }
-        public PositionNode(PositionGraph graph, int id, int partitionId, Vector3 position, int edgeId = -1) : base(graph, id, partitionId, position, edgeId)
-        {
-        }
-
     }
-
 }
-

@@ -6,7 +6,7 @@ public class ProceduralMeshBehaviour : MonoBehaviour
 {
     public ProceduralMeshRenderer PMR { get; private set; }
     private ProceduralMesh PM { get; set; }
-    protected ProceduralMeshBuilder PMB { get; private set; }
+    protected ProceduralMeshBuilder PMB { get; set; }
     public void Awake()
     {
         PMR = GetComponent<ProceduralMeshRenderer>();
