@@ -99,6 +99,22 @@ public class ProceduralPlanetMesh : ProceduralMeshBehaviour
         //PlanetGraphMethods.TectonicPlateGenerator(graph, GraphParameters.TectonicPlateParameters);
         //PlanetGraphMeshBuilder.SetTerrains(graph, GraphParameters.NeighborWeight);
     }
+    //private BiDictionaryOneToOne<PlateEdge, PlanetEdge> EdgeLookup;
+    //private void BuildLookup()
+    //{
+    //    EdgeLookup = new BiDictionaryOneToOne<PlateEdge, PlanetEdge>();
+    //    foreach (var plateEdge in myTectonicGraph.Edges)
+    //    {
+    //        foreach(var planetEdge in myPlanetGraph.Edges)
+    //        {
+    //            if (plateEdge.CenterLerp == planetEdge.CenterLerp)
+    //            {
+    //                EdgeLookup.Add(plateEdge, planetEdge);
+    //                break;
+    //            }
+    //        }
+    //    }
+    //}
     protected override void GenerateMesh()
     {
         //PMB.Clear();
@@ -133,6 +149,8 @@ public class ProceduralPlanetMesh : ProceduralMeshBehaviour
                     Gizmos.DrawLine(Vector3.Scale(edge.Node.Position, MeshParameters.Scale(PlanetParameters.TectonicParameters.MaxHeight)), Vector3.Scale(edge.CenterLerp, MeshParameters.Scale(PlanetParameters.TectonicParameters.MaxHeight)));
                 else
                     Gizmos.DrawLine(Vector3.Scale(edge.Node.Position, MeshParameters.Scale(PlanetParameters.TectonicParameters.MaxHeight)), Vector3.Scale(edge.Next.Node.Position, MeshParameters.Scale(PlanetParameters.TectonicParameters.MaxHeight)));
+
+                Gizmos.DrawWireSphere(edge.DebugEdge.Poly.CenterLerp, 0.01f);
 
             }
             i++;

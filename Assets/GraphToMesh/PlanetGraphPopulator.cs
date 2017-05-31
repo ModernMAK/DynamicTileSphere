@@ -1,7 +1,6 @@
 ﻿using Graphing.Planet;
 using System.Collections.Generic;
 using UnityEngine;
-using System.Collections;
 
 [System.Serializable]
 public struct PlateParameters
@@ -91,49 +90,297 @@ public class PlanetGraphPopulator
     private static PlateGraph CreatePlateGraph(PlanetGraph graph, PlateParameters parameters)
     {
         Dictionary<PlanetEdge, PlatePolyIntermediate> cache = new Dictionary<PlanetEdge, PlatePolyIntermediate>();
+        //Debug.Log("Started");
+        //Debug.Break();
         var plates = CreateBasePlateGraph(graph);
+        //Debug.Log("Base");
+        //Debug.Break();
         MergePlateGraph(plates, parameters, cache);
-        return CreateGraphFromIntermediate(plates, parameters, cache);
+        //Debug.Log("Merged");
+        //Debug.Break();
+
+        //Debug.Log("Final Assert: " + Assert(plates));
+        var edges = FetchPlateEdges(plates);
+        TrimPlateEdges(plates, edges, cache);
+        //Debug.Log("Trimmed");
+        //Debug.Break();
+        return CreateGraph(plates, edges, parameters);
+        //return CreateGraphFromIntermediate(plates, parameters, cache);
     }
     class PlateEdgeIntermediate
     {
+        public PlatePolyIntermediate Poly;
         public PlanetEdge Start;
         public PlanetEdge End;
         public PlateEdgeIntermediate Next;
-        //public PlateEdgeIntermediate Prev;
+        public PlateEdgeIntermediate Prev;
         public PlateEdgeIntermediate Twin;
     }
-    private static List<Queue<PlateEdgeIntermediate>> FetchPlateEdges(List<PlatePolyIntermediate> baseGraph, PlateParameters parameters, Dictionary<PlanetEdge, PlatePolyIntermediate> cache)
+    private static List<List<PlateEdgeIntermediate>> FetchPlateEdges(List<PlatePolyIntermediate> plates/*, PlateParameters parameters, Dictionary<PlanetEdge, PlatePolyIntermediate> cache*/)
     {
-        List<Queue<PlateEdgeIntermediate>> Edges = new List<Queue<PlateEdgeIntermediate>>();
-        Dictionary<PlanetEdge, PlateEdgeIntermediate> TwinLookup = new Dictionary<PlanetEdge, PlateEdgeIntermediate>();
-        foreach (var plate in baseGraph)
+
+        HashSet<PlanetEdge> Inspected = new HashSet<PlanetEdge>();
+        Dictionary<PlanetEdge, PlateEdgeIntermediate> PlanetToPlateEdges = new Dictionary<PlanetEdge, PlateEdgeIntermediate>();
+        List<List<PlateEdgeIntermediate>> Edges = new List<List<PlateEdgeIntermediate>>();
+
+
+        //List<PlanetEdge> Starts = new List<PlanetEdge>();
+        foreach (var plate in plates)
         {
-            Queue<PlateEdgeIntermediate> EdgeWalk = new Queue<PlateEdgeIntermediate>();
-            PlateEdgeIntermediate startEdge = null, currentEdge = null;
-            foreach (var planetPoly in plate)
-                if (currentEdge == null)
+            var plateEdges = new List<PlateEdgeIntermediate>();
+            Edges.Add(plateEdges);
+            foreach (var poly in plate)
+            {
+                foreach (var edge in poly)
                 {
-                    foreach (var planetEdge in planetPoly)
-                        if (plate.IsBorder(planetEdge))
-                        {
-                            startEdge = currentEdge = new PlateEdgeIntermediate() { Start = planetEdge, End = planetEdge };
-                            EdgeWalk.Enqueue(currentEdge);
-                            break;
-                        }
+                    //var edgeTwin = edge.Twin;
+                    if (!plate.IsBorder(edge))
+                    {
+                        Debug.Log("Skipping non border.");
+                        continue;
+                    }
+                    else if (Inspected.Contains(edge))
+                    {
+                        Debug.Log("Skipping checked edge.");
+                        continue;
+                    }
+
+                    var startEdge = edge;
+                    var endEdge = edge;
+
+                    //Create
+                    var currentEdge = startEdge.Prev;
+                    var createdEdge = new PlateEdgeIntermediate() { Start = startEdge, End = endEdge, Poly = plate };
+                    plateEdges.Add(createdEdge);
+                    //Iterate
+                    while (currentEdge != endEdge)
+                    {
+                        currentEdge = currentEdge.Next;
+                        Inspected.Add(currentEdge);
+                        PlanetToPlateEdges[currentEdge] = createdEdge;
+                    }
                 }
-                else break;
+            }
+        }
+        foreach (var queue in Edges)
+        {
+            Queue<PlateEdgeIntermediate> SetupQueue = new Queue<PlateEdgeIntermediate>(queue);
+            PlateEdgeIntermediate current = null;
+            while (SetupQueue.Count > 0)
+            {
+                //Get intermediary
+                var intermediary = current = SetupQueue.Dequeue();
 
-
-            //Walk
+                //There are several ways to reach a start
+                //Either it is the next (after end) or it is the next.twin's.next
+                PlateEdgeIntermediate found = null;
+                if (PlanetToPlateEdges.TryGetValue(intermediary.End.Next, out found) || PlanetToPlateEdges.TryGetValue(intermediary.End.Next.Twin.Next, out found))
+                {
+                    intermediary.Next = found;
+                    intermediary.Next.Prev = intermediary;
+                }
+                //To find the twin, we twin the end (to find the start of the next edge
+                if (intermediary.Twin == null && PlanetToPlateEdges.TryGetValue(intermediary.End.Twin, out found))
+                {
+                    intermediary.Twin = found;
+                    intermediary.Twin.Twin = intermediary;
+                }
+            }
+            queue.Clear();
+            var start = current;
             do
             {
-
-            } while (currentEdge != startEdge);
+                queue.Add(current);
+                current = current.Next;
+            } while (start != current);
         }
         return Edges;
     }
-    private static PlateGraph CreateGraphFromIntermediate(List<PlatePolyIntermediate> baseGraph, PlateParameters parameters, Dictionary<PlanetEdge, PlatePolyIntermediate> cache)
+    private static void ReverseEdges(List<List<PlateEdgeIntermediate>> edges)
+    {
+        foreach (var edgeList in edges)
+        {
+            foreach (var edge in edgeList)
+            {
+                var temp = edge.Next;
+                edge.Next = edge.Prev;
+                edge.Prev = temp;
+
+                var planetTemp = edge.Start;
+                edge.Start = edge.End;
+                edge.End = planetTemp;
+            }
+        }
+    }
+    private static bool ShouldMerge(PlateEdgeIntermediate edge, /*List<PlatePolyIntermediate> plates, Dictionary<PlanetEdge, PlatePolyIntermediate> cache,*/ out PlateEdgeIntermediate removed)
+    {
+        removed = null;
+        var prev = edge.Prev;
+        var prevBorderPoly = edge.Prev.Twin.Poly;
+        var edgeBorderPoly = edge.Twin.Poly;
+        if (edge.Start.Poly != prev.Start.Poly || prevBorderPoly != edgeBorderPoly)
+            return false;
+        removed = prev;
+        return true;
+    }
+    private static bool ShouldMergePrev(PlateEdgeIntermediate edge, List<PlatePolyIntermediate> plates, Dictionary<PlanetEdge, PlatePolyIntermediate> cache, out PlateEdgeIntermediate removed)
+    {
+        removed = null;
+        var prevEdge = edge.Prev;
+        //if (prevEdge.Start.Poly != edge.Start.Poly)//Not same planet Poly
+        //    return false;
+        var prevEdgeBorderPlate = prevEdge.Twin.Poly; GetPlateFromEdge(plates, prevEdge.Start.Twin, cache);
+        var edgeBorderPlate = GetPlateFromEdge(plates, edge.Start.Twin, cache);
+        if (prevEdgeBorderPlate != edgeBorderPlate)//Not bordering same plate poly
+            return false;
+        removed = prevEdge;
+        //RemoveEdge(removed);
+        return true;
+    }
+    private static bool ShouldMergeNext(PlateEdgeIntermediate edge, List<PlatePolyIntermediate> plates, Dictionary<PlanetEdge, PlatePolyIntermediate> cache, out PlateEdgeIntermediate removed)
+    {
+        removed = null;
+        var nextEdge = edge.Next;
+        //if (nextEdge.Start.Poly != edge.Start.Poly)//Not same planet Poly
+        //    return false;
+        var nextEdgeBorderPlate = GetPlateFromEdge(plates, nextEdge.Start.Twin, cache);
+        var edgeBorderPlate = GetPlateFromEdge(plates, edge.Start.Twin, cache);
+        if (nextEdgeBorderPlate != edgeBorderPlate)//Not bordering same plate poly
+            return false;
+
+        removed = nextEdge;
+        //RemoveEdge(removed);
+        return false;
+    }
+    private static void RemoveEdge(PlateEdgeIntermediate edge)
+    {
+        edge.Prev.Next = edge.Next;
+        edge.Next.Prev = edge.Prev;
+        edge.Twin.Twin = edge.Prev;
+
+        edge.Prev.End = edge.End;
+
+        edge.Next = edge.Twin = edge.Prev;
+        edge.Start = edge.End = null;
+    }
+
+    //The good news, this is the only thing that we need to fix
+    //Bad news, I dont know how!
+    private static void TrimPlateEdges(List<PlatePolyIntermediate> plates, List<List<PlateEdgeIntermediate>> untrimmed, Dictionary<PlanetEdge, PlatePolyIntermediate> cache)
+    {
+        HashSet<PlateEdgeIntermediate> RemovedEdges = new HashSet<PlateEdgeIntermediate>();
+        Queue<PlateEdgeIntermediate> tempQueue = null;
+        var mergeQueue = new Queue<PlateEdgeIntermediate>();
+        foreach (var edgeList in untrimmed)
+        {
+            tempQueue = new Queue<PlateEdgeIntermediate>(edgeList);
+            while (tempQueue.Count > 0)
+            {
+                var edge = tempQueue.Dequeue();
+                if (RemovedEdges.Contains(edge))
+                    continue;
+                //if (removed.Contains(edge))
+                //    continue;
+                var removed = edge;
+                //if (ShouldMergePrev(edge, plates, cache, out removed) || ShouldMergeNext(edge, plates, cache, out removed))
+                if(ShouldMerge(edge,out removed))
+                {
+                    //if (edge.Start.Poly == null)
+                    //    throw new System.Exception("Found the problem!");
+                    //if (nextEdge.Start.Poly == null)
+                    //    throw new System.Exception("Found the other problem!");
+                    //if (edge.Start.Poly != edge.End.Poly)
+                    //    throw new System.Exception("Exception! At least the comp knows too.");
+
+                    RemovedEdges.Add(removed);
+                    mergeQueue.Enqueue(removed);
+                }
+            }
+
+
+            tempQueue = new Queue<PlateEdgeIntermediate>(edgeList);
+            edgeList.Clear();
+            foreach (var edge in tempQueue)
+                if (!RemovedEdges.Contains(edge))
+                    edgeList.Add(edge);
+        }
+        foreach (var edge in mergeQueue)
+            RemoveEdge(edge);
+
+        //return untrimmed;
+    }
+    private static PlateGraph CreateGraph(List<PlatePolyIntermediate> plates, List<List<PlateEdgeIntermediate>> edges, PlateParameters parameters)
+    {
+        List<PlatePoly> Polys = new List<PlatePoly>();
+        List<PlateEdge> Edges = new List<PlateEdge>();
+        List<PlateNode> Nodes = new List<PlateNode>();
+        foreach (var plate in plates)
+        {
+            var poly = new PlatePoly()
+            {
+                Height = Random.Range(parameters.MinHeight, parameters.MaxHeight),
+                Identity = Polys.Count
+            };
+            Polys.Add(poly);
+        }
+        Dictionary<PlateEdgeIntermediate, PlateEdge> NextAndTwinLookup = new Dictionary<PlateEdgeIntermediate, PlateEdge>();
+        Dictionary<PlanetNode, PlateNode> NodeLookup = new Dictionary<PlanetNode, PlateNode>();
+        int i = -1;
+        foreach (var edgeQueue in edges)
+        {
+            i++;
+            var createdPoly = Polys[i];
+            foreach (var edge in edgeQueue)
+            {
+                PlateNode createdNode = null;
+                var node = edge.Start.Node;
+                if (!NodeLookup.TryGetValue(node, out createdNode))
+                {
+                    NodeLookup[node] = createdNode = new PlateNode()
+                    {
+                        Position = node.Position,
+                        Identity = Nodes.Count
+                    };
+                    Nodes.Add(createdNode);
+                }
+                PlateEdge createdEdge = new PlateEdge()
+                {
+                    Node = createdNode,
+                    Poly = createdPoly,
+                    Identity = Edges.Count,
+                    DebugEdge = edge.Start
+                };
+                Edges.Add(createdEdge);
+                createdPoly.Edge = createdNode.Edge = createdEdge;
+
+
+                NextAndTwinLookup[edge] = createdEdge;
+                PlateEdge temp = null;
+                if (createdEdge.Next == null && NextAndTwinLookup.TryGetValue(edge.Next, out temp))
+                {
+                    createdEdge.Next = temp;
+                    createdEdge.Next.Prev = createdEdge;
+                }
+                if (createdEdge.Prev == null && NextAndTwinLookup.TryGetValue(edge.Prev, out temp))
+                {
+                    createdEdge.Prev = temp;
+                    createdEdge.Prev.Next = createdEdge;
+                }
+                if (createdEdge.Twin == null && NextAndTwinLookup.TryGetValue(edge.Twin, out temp))
+                {
+                    createdEdge.Twin = temp;
+                    createdEdge.Twin.Twin = createdEdge;
+                }
+            }
+        }
+        return new PlateGraph()
+        {
+            Nodes = Nodes,
+            Edges = Edges,
+            Polys = Polys
+        };
+    }
+    private static PlateGraph CreateGraphFromIntermediate(List<PlatePolyIntermediate> plates, PlateParameters parameters, Dictionary<PlanetEdge, PlatePolyIntermediate> cache)
     {
         HashSet<PlanetEdge> Inspected = new HashSet<PlanetEdge>();
         Dictionary<PlanetEdge, PlateEdgeIntermediate> PlanetToPlateEdges = new Dictionary<PlanetEdge, PlateEdgeIntermediate>();
@@ -141,7 +388,7 @@ public class PlanetGraphPopulator
 
 
         //List<PlanetEdge> Starts = new List<PlanetEdge>();
-        foreach (var plate in baseGraph)
+        foreach (var plate in plates)
         {
             foreach (var poly in plate)
             {
@@ -163,10 +410,10 @@ public class PlanetGraphPopulator
                     var endEdge = edge;
                     if (parameters.Trim)
                     {
-                        var borderPlate = GetPlateFromEdge(baseGraph, edge.Twin, cache);
-                        while (startEdge.Prev.Poly == edge.Poly && GetPlateFromEdge(baseGraph, startEdge.Prev.Twin, cache) == borderPlate)
+                        var borderPlate = GetPlateFromEdge(plates, edge.Twin, cache);
+                        while (startEdge.Prev.Poly == edge.Poly && GetPlateFromEdge(plates, startEdge.Prev.Twin, cache) == borderPlate)
                             startEdge = startEdge.Prev;
-                        while (endEdge.Next.Poly == edge.Poly && GetPlateFromEdge(baseGraph, endEdge.Next.Twin, cache) == borderPlate)
+                        while (endEdge.Next.Poly == edge.Poly && GetPlateFromEdge(plates, endEdge.Next.Twin, cache) == borderPlate)
                             endEdge = endEdge.Next;
                     }
                     //Create
@@ -211,7 +458,7 @@ public class PlanetGraphPopulator
                 intermediary.Twin = found;
                 intermediary.Twin.Twin = intermediary;
             }
-            var poly = GetPlateFromEdge(baseGraph, intermediary.Start, cache);
+            var poly = GetPlateFromEdge(plates, intermediary.Start, cache);
             PlatePoly createdPoly;
             if (!PolyLookup.TryGetValue(poly, out createdPoly))
             {
@@ -250,10 +497,10 @@ public class PlanetGraphPopulator
             var intermediary = PlateEdges.Dequeue();
             var createdEdge = EdgeLookup[intermediary];
             PlateEdge temp = null;
-            if (createdEdge.Next == null && EdgeLookup.TryGetValue(intermediary.Next, out temp))
+            if (createdEdge.Prev == null && EdgeLookup.TryGetValue(intermediary.Next, out temp))
             {
-                createdEdge.Next = temp;
-                createdEdge.Next.Prev = createdEdge;
+                createdEdge.Prev = temp;
+                createdEdge.Prev.Next = createdEdge;
             }
             if (createdEdge.Twin == null && EdgeLookup.TryGetValue(intermediary.Twin, out temp))
             {
@@ -290,7 +537,7 @@ public class PlanetGraphPopulator
     private static List<PlatePolyIntermediate> CreateBasePlateGraph(PlanetGraph graph)
     {
         var plateBaseGraph = new List<PlatePolyIntermediate>();
-        Debug.Log(graph.Polys.Count);
+        //Debug.Log(graph.Polys.Count);
         foreach (var poly in graph.Polys)
         {
             var intermediate = new PlatePolyIntermediate();
@@ -301,6 +548,8 @@ public class PlanetGraphPopulator
     }
     private static PlatePolyIntermediate GetPlateFromEdge(List<PlatePolyIntermediate> baseGraph, PlanetEdge edge, Dictionary<PlanetEdge, PlatePolyIntermediate> cache)
     {
+        if (edge == null)
+            throw new System.Exception("Cant Fetch Poly On Null Edge!");
         PlatePolyIntermediate temp = null;
         if (cache.TryGetValue(edge, out temp))
             return temp;
@@ -333,17 +582,16 @@ public class PlanetGraphPopulator
         return true;
 
     }
-    private static void MergePlateGraph(List<PlatePolyIntermediate> baseGraph, PlateParameters parameters, Dictionary<PlanetEdge, PlatePolyIntermediate> cache)
+    private void MergePlate(List<PlatePolyIntermediate> plates, PlatePolyIntermediate merging, PlatePolyIntermediate absorbing)
     {
-        Debug.Log("Initial Assertion: " + Assert(baseGraph));
-        //Merges plates according to the parameters
-        //private static void PlateMerge(PlateGraph graph, PlateParameters parameters)
-        //{
-        List<PlatePolyIntermediate> SortedPlates = new List<PlatePolyIntermediate>(baseGraph);
 
+    }
+    private static void MergePlateGraph(List<PlatePolyIntermediate> plates, PlateParameters parameters, Dictionary<PlanetEdge, PlatePolyIntermediate> cache)
+    {
+        Debug.Log("Initial Assertion: " + Assert(plates));
+        List<PlatePolyIntermediate> SortedPlates = new List<PlatePolyIntermediate>(plates);
         Dictionary<PlatePolyIntermediate, int> NeighborEdges = new Dictionary<PlatePolyIntermediate, int>();
         SortedPlates.Sort((x, y) => { return x.Count.CompareTo(y.Count); });
-        //int empties = 0;
         while (SortedPlates[0].Count <= 0)
             SortedPlates.RemoveAt(0);
         PlatePolyIntermediate activePlate = null;
@@ -351,11 +599,12 @@ public class PlanetGraphPopulator
         //OR
         //The plate cound is acceptable (below max)
         //Each plate must have at least 3  polys to form the plate,  as two create a possible line border (surrounded by a single other plate), and one creates a possible nonexistant border (surrounded by a single other plate)
-
         bool smallPlateCondition = (SortedPlates.Count > 1 && SortedPlates[0].Count < Mathf.Max(3, parameters.MinPlateSize));
         bool plateCapacityCondition = (parameters.MaxPlates > 0 && SortedPlates.Count > parameters.MaxPlates);
+        int pass = 0;
         while (smallPlateCondition || plateCapacityCondition)
         {
+            Debug.Log("Pass " + (pass++));
             int id = 0;
             if (!smallPlateCondition && plateCapacityCondition)//Small plates merge with big plates, so it's id is always 0
                                                                //plateCapacity tends towards small plates, but it
@@ -373,7 +622,7 @@ public class PlanetGraphPopulator
                         //Debug.Log("Not Border");
                         continue;
                     }
-                    var edgePlate = GetPlateFromEdge(baseGraph, edge.Twin, cache);
+                    var edgePlate = GetPlateFromEdge(plates, edge.Twin, cache);
 
                     if (activePlate == edgePlate)
                     {
@@ -409,13 +658,13 @@ public class PlanetGraphPopulator
                 var largePoly = largeKvp.Value.Key;
                 largePoly.AddRange(activePlate);
                 activePlate.Clear();
-                baseGraph.Remove(activePlate);
+                plates.Remove(activePlate);
                 SortedPlates.Remove(activePlate);
                 SortedPlates.Sort((x, y) => { return x.Count.CompareTo(y.Count); });
             }
             smallPlateCondition = (SortedPlates.Count > 1 && SortedPlates[0].Count < Mathf.Max(3, parameters.MinPlateSize));
             plateCapacityCondition = (parameters.MaxPlates > 0 && SortedPlates.Count > parameters.MaxPlates);
-            Debug.Log("Assertion: " + Assert(baseGraph));
+            Debug.Log("Assertion: " + Assert(plates));
         }
     }
 
