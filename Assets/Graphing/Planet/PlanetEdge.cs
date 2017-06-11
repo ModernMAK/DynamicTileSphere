@@ -2,7 +2,7 @@
 namespace Graphing.Planet
 {
     public class PlanetEdge
-        : PositionEdge<PlanetPoly, PlanetEdge, PlanetNode>
+        : ObsoletePositionEdge<PlanetPoly, PlanetEdge, PlanetNode>
     {
         public PlanetEdge() : base()
         {

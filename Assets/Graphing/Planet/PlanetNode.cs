@@ -2,7 +2,7 @@
 {
     using Position.Generic;
     public class PlanetNode
-        : PositionNode<PlanetPoly, PlanetEdge, PlanetNode>
+        : ObsoletePositionNode<PlanetPoly, PlanetEdge, PlanetNode>
     {
         public PlanetNode() : base()
         {

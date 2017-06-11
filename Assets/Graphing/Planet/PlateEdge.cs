@@ -3,7 +3,7 @@ using Graphing.Planet;
 namespace Graphing.Planet
 {
     public class PlateEdge
-        : PositionEdge<PlatePoly, PlateEdge, PlateNode>
+        : ObsoletePositionEdge<PlatePoly, PlateEdge, PlateNode>
     {
         public PlanetEdge DebugEdge { get; set; }
     }

@@ -1,9 +1,9 @@
 ﻿using Graphing.Generic;
 using System.Collections.Generic;
 public class PolygonEdgeComparar<PolyType, EdgeType, NodeType> : IEqualityComparer<PolygonEdge<PolyType, EdgeType, NodeType>>
-    where PolyType : GraphPoly<PolyType, EdgeType, NodeType>, new()
-    where EdgeType : GraphEdge<PolyType, EdgeType, NodeType>, new()
-    where NodeType : GraphNode<PolyType, EdgeType, NodeType>, new()
+    where PolyType : ObsoleteGraphPoly<PolyType, EdgeType, NodeType>, new()
+    where EdgeType : ObsoleteGraphEdge<PolyType, EdgeType, NodeType>, new()
+    where NodeType : ObsoleteGraphNode<PolyType, EdgeType, NodeType>, new()
 {
     public bool Equals(PolygonEdge<PolyType, EdgeType, NodeType> x, PolygonEdge<PolyType, EdgeType, NodeType> y)
     {

@@ -7,13 +7,13 @@ using UnityEngine;
 using Graphing.Planet;
 public class MeshGraphConverter
 {    
-    public static PositionGraph CreateGraph(ProceduralMeshBuilder pmb, bool createDual = false)
+    public static ObsoletePositionGraph CreateGraph(ProceduralMeshBuilder pmb, bool createDual = false)
     {
         return CreateGraph(pmb.Verticies.ToArray(), pmb.Triangles.ToArray(), createDual);
     }
-    private class PositionTwinEdgeComparar : IEqualityComparer<PositionEdge>
+    private class PositionTwinEdgeComparar : IEqualityComparer<ObsoletePositionEdge>
     {
-        public bool Equals(PositionEdge x, PositionEdge y)
+        public bool Equals(ObsoletePositionEdge x, ObsoletePositionEdge y)
         {
             var xNow = x.Node;
             var yNow = y.Node;
@@ -22,28 +22,28 @@ public class MeshGraphConverter
             return (xNow == yNext && xNext == yNow);
         }
 
-        public int GetHashCode(PositionEdge obj)
+        public int GetHashCode(ObsoletePositionEdge obj)
         {
             var objNow = obj.Node;
             var objNext = obj.Next.Node;
             return objNow.GetHashCode() ^ objNext.GetHashCode();
         }
     }
-    public static PositionGraph CreateGraph(ProceduralVertex[] mv, ProceduralTriangle[] tris, bool createDual = false)
+    public static ObsoletePositionGraph CreateGraph(ProceduralVertex[] mv, ProceduralTriangle[] tris, bool createDual = false)
     {
         //KeyValuePair<long, int>[] dEdgeLookup = new KeyValuePair<long, int>[tris.Length * 3];
         //long[] dTwin = new long[tris.Length * 3];
-        PositionGraph graph = new PositionGraph(mv.Length, tris.Length * 3, tris.Length);
-        Dictionary<PositionEdge, int> TwinLookup = new Dictionary<PositionEdge, int>(new PositionTwinEdgeComparar());
+        ObsoletePositionGraph graph = new ObsoletePositionGraph(mv.Length, tris.Length * 3, tris.Length);
+        Dictionary<ObsoletePositionEdge, int> TwinLookup = new Dictionary<ObsoletePositionEdge, int>(new PositionTwinEdgeComparar());
         //Initialize Nodes
         for (int i = 0; i < mv.Length; i++)
-            graph.Nodes.Add(new PositionNode());
+            graph.Nodes.Add(new OsboletePositionNode());
         //Initialize Polygons and Edges
         for (int i = 0; i < tris.Length; i++)
         {
-            graph.Polys.Add(new PositionPoly());
+            graph.Polys.Add(new ObsoletePositionPoly());
             for (int j = 0; j < 3; j++)
-                graph.Edges.Add(new PositionEdge());
+                graph.Edges.Add(new ObsoletePositionEdge());
         }
         //Finalize Nodes (Stage 1)
         for (int i = 0; i < mv.Length; i++)
@@ -94,7 +94,7 @@ public class MeshGraphConverter
         //Debug.Log("Before Possible Dual : " + graph.Nodes.Count + ", " + graph.Edges.Count + ", " + graph.Polys.Count);
         if (createDual)
         {
-            var tempGraph = graph.Dual<PositionGraph>();
+            var tempGraph = graph.Dual<ObsoletePositionGraph>();
             //AssertPMBGraph(tempGraph);
             //AssertDualGraph(graph, tempGraph);
             graph = tempGraph;
@@ -111,17 +111,17 @@ public class MeshGraphConverter
 
         return graph;
     }
-    public static PositionGraph FetchGraph(int subdivisions, ShapeType shape = ShapeType.Icosahedron, bool slerp = false, bool createDual = false, bool clean = false)
+    public static ObsoletePositionGraph FetchGraph(int subdivisions, ShapeType shape = ShapeType.Icosahedron, bool slerp = false, bool createDual = false, bool clean = false)
     {
         string fName = (createDual ? "Dual" : "") + (slerp ? "Slerped" : "NormalLerped") + shape.ToString() + "_D" + subdivisions;
         string fPath = Application.persistentDataPath;
         string fExt = ".pos";
         string fullPath = Path.ChangeExtension(Path.Combine(fPath, fName), fExt);
-        PositionGraph graph;
+        ObsoletePositionGraph graph;
         if (File.Exists(fullPath) && !clean)
         {
             Debug.Log("Loaded : " + fullPath);
-            graph = new PositionGraph();
+            graph = new ObsoletePositionGraph();
             using (var fStream = new FileStream(fullPath, FileMode.Open))
             {
                 using (var bReader = new BinaryReader(fStream))
@@ -144,7 +144,7 @@ public class MeshGraphConverter
         }
         return graph;
     }
-    private static PositionGraph CreateGraph(int subdivisions, ShapeType shape, bool slerp = false, bool createDual = false)
+    private static ObsoletePositionGraph CreateGraph(int subdivisions, ShapeType shape, bool slerp = false, bool createDual = false)
     {
         ProceduralMeshBuilder pmb = new ProceduralMeshBuilder();
         ProceduralPlatonicSolidGenerator.AddToMeshBuilder(pmb, shape, RadiusType.Normalized);
@@ -160,7 +160,7 @@ public class MeshGraphConverter
     {
         return CreateEmptyPlanetGraph(FetchGraph(subdivisions, shape, slerp, createDual, clean), partitionSize);
     }
-    public static PlanetGraph CreateEmptyPlanetGraph(PositionGraph position, int partitionSize = 32)
+    public static PlanetGraph CreateEmptyPlanetGraph(ObsoletePositionGraph position, int partitionSize = 32)
     {
         int nCount = position.Nodes.Count, eCount = position.Edges.Count, pCount = position.Polys.Count, partCount = pCount / partitionSize + (pCount % partitionSize > 0 ? 1 : 0);
         PlanetGraph graph = new PlanetGraph(nCount, eCount, pCount, partitionSize);

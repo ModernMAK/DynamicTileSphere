@@ -1,8 +1,8 @@
 ﻿using Graphing.Generic;
 public class PolygonEdge<PolyType, EdgeType, NodeType>
-    where PolyType : GraphPoly<PolyType, EdgeType, NodeType>, new()
-    where EdgeType : GraphEdge<PolyType, EdgeType, NodeType>, new()
-    where NodeType : GraphNode<PolyType, EdgeType, NodeType>, new()
+    where PolyType : ObsoleteGraphPoly<PolyType, EdgeType, NodeType>, new()
+    where EdgeType : ObsoleteGraphEdge<PolyType, EdgeType, NodeType>, new()
+    where NodeType : ObsoleteGraphNode<PolyType, EdgeType, NodeType>, new()
 {
     public PolygonEdge(EdgeType edge)
     {

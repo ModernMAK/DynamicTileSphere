@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 public class GraphMeshBuilder<GraphT, PolyT, EdgeT, NodeT> : ProceduralMeshBuilder
     where GraphT : PositionGraph<PolyT, EdgeT, NodeT>
-    where PolyT : PositionPoly<PolyT, EdgeT, NodeT>, new()
-    where EdgeT : PositionEdge<PolyT, EdgeT, NodeT>, new()
-    where NodeT : PositionNode<PolyT, EdgeT, NodeT>, new()
+    where PolyT : ObsoletePositionPoly<PolyT, EdgeT, NodeT>, new()
+    where EdgeT : ObsoletePositionEdge<PolyT, EdgeT, NodeT>, new()
+    where NodeT : ObsoletePositionNode<PolyT, EdgeT, NodeT>, new()
 {
     public GraphMeshBuilder()
     {

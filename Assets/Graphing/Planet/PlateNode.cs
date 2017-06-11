@@ -4,7 +4,7 @@ namespace Graphing.Planet
 {
     using Position.Generic;
     public class PlateNode
-        : PositionNode<PlatePoly, PlateEdge, PlateNode>
+        : ObsoletePositionNode<PlatePoly, PlateEdge, PlateNode>
     {
     }
 }

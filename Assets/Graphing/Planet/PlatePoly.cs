@@ -3,7 +3,7 @@
 namespace Graphing.Planet
 {
     public class PlatePoly
-        : PositionPoly<PlatePoly, PlateEdge, PlateNode>
+        : ObsoletePositionPoly<PlatePoly, PlateEdge, PlateNode>
     {
         public PlatePoly() : base()
         {
