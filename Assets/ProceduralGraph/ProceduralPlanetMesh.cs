@@ -21,48 +21,6 @@ using UnityEngine;
 //    public float Solidity;
 //    //public PlanetTectonicPlateParameters TectonicPlateParameters;
 //}
-[System.Serializable]
-public struct ProceduralPlanetMeshParameters
-{
-    public static ProceduralPlanetMeshParameters Default
-    {
-        get
-        {
-            return new ProceduralPlanetMeshParameters()
-            {
-                Subdivisions = 0,
-                Shape = ShapeType.Icosahedron,
-                Slerp = false,
-                Dual = true,
-                PartitionSize = 32,
-            };
-        }
-    }
-    public int Subdivisions;
-    public ShapeType Shape;
-    public bool Slerp;
-    public bool Dual;
-    public int PartitionSize;
-}
-[System.Serializable]
-public struct PlanetGraphParameters
-{
-    public static PlanetGraphParameters Default
-    {
-        get
-        {
-            return new PlanetGraphParameters()
-            {
-                Seed = 0,
-                TerrainTypes = 1,
-                TectonicParameters = PlateParameters.Default
-            };
-        }
-    }
-    public int Seed;
-    public int TerrainTypes;
-    public PlateParameters TectonicParameters;
-}
 public class ProceduralPlanetMesh : ProceduralMeshBehaviour
 {
     public bool RebuildGraph;
@@ -77,7 +35,7 @@ public class ProceduralPlanetMesh : ProceduralMeshBehaviour
     }
 
     private PlanetGraphMeshBuilder myPlanetMeshBuilder;
-    private PlateGraph myTectonicGraph;
+//    private PlateGraph myTectonicGraph;
     public PlanetGraphParameters PlanetParameters = PlanetGraphParameters.Default;
     public ProceduralPlanetMeshParameters GraphParameters = ProceduralPlanetMeshParameters.Default;
     public PlanetGraphMeshParameters MeshParameters = PlanetGraphMeshParameters.Default;
@@ -91,7 +49,8 @@ public class ProceduralPlanetMesh : ProceduralMeshBehaviour
             myPlanetMeshBuilder.Clear();
             //RebuildGraph = false;
             myPlanetGraph = MeshGraphConverter.FetchEmptyPlanetGraph(GraphParameters.Subdivisions, GraphParameters.Shape, GraphParameters.Slerp, GraphParameters.Dual, GraphParameters.PartitionSize);
-            PlanetGraphPopulator.Populate(myPlanetGraph, PlanetParameters, out myTectonicGraph);
+//            PlanetGraphPopulator.Populate(myPlanetGraph, PlanetParameters, out myTectonicGraph);
+            PlanetGraphPopulator.Populate(myPlanetGraph, PlanetParameters);
             PMB = myPlanetMeshBuilder = new PlanetGraphMeshBuilder(myPlanetGraph, MeshParameters);
         }
         //graph = PlanetGraphMeshBuilder.CreatePlanetGraph(GraphParameters.Divisions, GraphParameters.Slerp);
@@ -128,34 +87,35 @@ public class ProceduralPlanetMesh : ProceduralMeshBehaviour
         //myTempPositionBuilder.Generate(posGraph);// MeshGraphConverter.FetchGraph(GraphParameters.Subdivisions, GraphParameters.Shape, GraphParameters.Slerp, GraphParameters.Dual));
         myPlanetMeshBuilder.Generate();//.GenerateMesh(graph, PMB, GraphParameters);
     }
-    public bool drawFullLine;
-    private void OnDrawGizmos()
-    {
-        if (myTectonicGraph == null)
-            return;
-
-        int i = 0, l = myTectonicGraph.Polys.Count;
-        foreach (var poly in myTectonicGraph.Polys)
-        {
-            Gizmos.color = Color.HSVToRGB(((float)i) / l, 1f, 1f);
-            if (poly.Oceanic)
-                Gizmos.DrawSphere(Vector3.Scale(poly.CenterSlerp, MeshParameters.Scale(PlanetParameters.TectonicParameters.MaxHeight)), 0.01f);
-            else
-                Gizmos.DrawCube(Vector3.Scale(poly.CenterSlerp, MeshParameters.Scale(PlanetParameters.TectonicParameters.MaxHeight)), Vector3.one * 0.02f);
-
-            foreach (var edge in poly)
-            {
-                if(!drawFullLine)
-                    Gizmos.DrawLine(Vector3.Scale(edge.Node.Position, MeshParameters.Scale(PlanetParameters.TectonicParameters.MaxHeight)), Vector3.Scale(edge.CenterLerp, MeshParameters.Scale(PlanetParameters.TectonicParameters.MaxHeight)));
-                else
-                    Gizmos.DrawLine(Vector3.Scale(edge.Node.Position, MeshParameters.Scale(PlanetParameters.TectonicParameters.MaxHeight)), Vector3.Scale(edge.Next.Node.Position, MeshParameters.Scale(PlanetParameters.TectonicParameters.MaxHeight)));
-
-                Gizmos.DrawWireSphere(edge.DebugEdge.Poly.CenterLerp, 0.01f);
-
-            }
-            i++;
-        }
-    }
+    
+//    public bool drawFullLine;
+//    private void OnDrawGizmos()
+//    {
+//        if (myTectonicGraph == null)
+//            return;
+//
+//        int i = 0, l = myTectonicGraph.Polys.Count;
+//        foreach (var poly in myTectonicGraph.Polys)
+//        {
+//            Gizmos.color = Color.HSVToRGB(((float)i) / l, 1f, 1f);
+//            if (poly.Oceanic)
+//                Gizmos.DrawSphere(Vector3.Scale(poly.CenterSlerp, MeshParameters.Scale(PlanetParameters.TectonicParameters.MaxHeight)), 0.01f);
+//            else
+//                Gizmos.DrawCube(Vector3.Scale(poly.CenterSlerp, MeshParameters.Scale(PlanetParameters.TectonicParameters.MaxHeight)), Vector3.one * 0.02f);
+//
+//            foreach (var edge in poly)
+//            {
+//                if(!drawFullLine)
+//                    Gizmos.DrawLine(Vector3.Scale(edge.Node.Position, MeshParameters.Scale(PlanetParameters.TectonicParameters.MaxHeight)), Vector3.Scale(edge.CenterLerp, MeshParameters.Scale(PlanetParameters.TectonicParameters.MaxHeight)));
+//                else
+//                    Gizmos.DrawLine(Vector3.Scale(edge.Node.Position, MeshParameters.Scale(PlanetParameters.TectonicParameters.MaxHeight)), Vector3.Scale(edge.Next.Node.Position, MeshParameters.Scale(PlanetParameters.TectonicParameters.MaxHeight)));
+//
+//                Gizmos.DrawWireSphere(edge.DebugEdge.Poly.CenterLerp, 0.01f);
+//
+//            }
+//            i++;
+//        }
+//    }
     //IEnumerator GizmoRoutine()
     //{
     //    int i = -1;

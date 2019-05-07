@@ -35,6 +35,27 @@ public class PlanetGraphPopulator
 
         }
     }
+    public static void Populate(PlanetGraph graph, PlanetGraphParameters parameters)
+    {
+        using (TempRandomLock randLock = new TempRandomLock(parameters.Seed))
+        {
+//            tectonicGraph = CreatePlateGraph(graph, parameters.TectonicParameters);
+            SetRandomTerrain(graph, parameters);
+            CalculateRandomHeights(graph, parameters);
+
+
+        }
+    }
+
+    private static void CalculateRandomHeights(PlanetGraph graph, PlanetGraphParameters parameters)
+    {
+        foreach (var poly in graph.Polys)
+        {
+            poly.Elevation = Random.Range(parameters.TectonicParameters.MinHeight,
+                parameters.TectonicParameters.MaxHeight);
+        }
+    }
+
     private static void CalculateBaseHeights(PlanetGraph graph, PlateGraph tectonicGraph)
     {
         Dictionary<PlatePoly, Vector3> PlatePolyCenter = new Dictionary<PlatePoly, Vector3>();

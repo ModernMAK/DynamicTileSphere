@@ -102,7 +102,7 @@ public class ProceduralMeshUtility
     private struct SubdivisionEdgeHelper
     {
 
-        public SubdivisionEdgeHelper(ProceduralVertex t, ProceduralVertex f)
+        public SubdivisionEdgeHelper(ProceduralVertex t, ProceduralVertex f) : this()
         {
             To = t;
             From = f;

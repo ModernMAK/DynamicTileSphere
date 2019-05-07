@@ -4,7 +4,7 @@ using System.Collections;
 
 public struct ProceduralTriangle : IEnumerable<int>
 {
-    public ProceduralTriangle(int pivot, int left, int right)
+    public ProceduralTriangle(int pivot, int left, int right): this()
     {
         Indicies = new int[3] { pivot, left, right };
     }

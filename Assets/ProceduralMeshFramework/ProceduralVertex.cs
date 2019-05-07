@@ -21,7 +21,7 @@ public struct ProceduralVertex
 
 
     //Was Playing Minecraft when I realized, why am I not using methodchaining (Minecraft uses it alot last time i tried my hand at modding)
-    public ProceduralVertex(Vector3 position)
+    public ProceduralVertex(Vector3 position): this()
     {
         Position = position;
 
