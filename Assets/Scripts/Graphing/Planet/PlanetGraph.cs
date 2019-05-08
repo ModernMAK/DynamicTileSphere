@@ -15,7 +15,6 @@ namespace Graphing.Planet
         }
 
         private int PartitionSize { get; set; }
-        public PlateGraph PlateGraph { get; set; }
 
         public IList<PlanetPartition> Partitions { get; internal set; }
 

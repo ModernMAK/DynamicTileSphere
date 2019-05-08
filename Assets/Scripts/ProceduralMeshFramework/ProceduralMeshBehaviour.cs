@@ -1,12 +1,13 @@
 ﻿using System;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace ProceduralMeshFramework
 {
     [RequireComponent(typeof(ProceduralMeshRenderer))]
     public class ProceduralMeshBehaviour : MonoBehaviour
     {
-        [SerializeField] protected bool _regenerate;
+        [SerializeField] public bool Regenerate;
 
 
         public ProceduralMeshRenderer PMR { get; private set; }
@@ -30,9 +31,9 @@ namespace ProceduralMeshFramework
 
         public void Update()
         {
-            if (_regenerate)
+            if (Regenerate)
             {
-                _regenerate = false;
+                Regenerate = false;
                 GenerateMesh();
                 CompileMesh();
             }
