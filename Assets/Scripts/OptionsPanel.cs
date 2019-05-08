@@ -139,7 +139,7 @@ public class OptionsPanel : MonoBehaviour
 
     private void SoliditySliderChanged(float arg0)
     {
-        float value = RoundToPlace(arg0, 1);
+        float value = RoundToPlace(arg0, 2);
         UpdateSolidity(value);
     }
 
