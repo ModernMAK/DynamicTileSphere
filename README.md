@@ -12,3 +12,6 @@ Drag to move the view around, and scroll to zoom.
 While you can edit values from the editor, values modified in the editor are not reflected in the ingame gui.
 
 Rather than recalculate the graph every time it's needed, the graph is saved locally, to the persistant data path. Only the vertex position and the description of the graph is saved.
+
+## Preview
+![](NonCriticalFiles/DemoVisual.png)
