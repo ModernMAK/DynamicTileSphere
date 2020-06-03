@@ -10,9 +10,20 @@ namespace ModernMAK.Graphing.Native
 {
     public class PolygonData : IDisposable, IBinarySerializable
     {
+        public PolygonData(Allocator allocator = Allocator.Persistent)
+        {
+            Count = 0;
+            Edge = new NativeList<int>(allocator);
+        }
+        public PolygonData(int size, Allocator allocator = Allocator.Persistent)
+        {
+            Count = size;
+            Edge = new NativeList<int>(size,allocator);
+        }
+
         //ID = INDEX
         //Still, we keep a Count which represents the # of nodes
-        public int Count { get; set; }
+        public int Count { get; private set; }
         public NativeList<int> Edge { get; }
 
         public IEnumerable<int> WalkEdge<TEdge>(int index, TEdge edgeData) where TEdge : EdgeData
@@ -51,8 +62,7 @@ namespace ModernMAK.Graphing.Native
         public virtual void Assert()
         {
             var expectedLen = Count;
-            if(expectedLen != Edge.Length)
-                throw new Exception($"{nameof(Edge.Length)} size mismatch! ({Edge.Length} != {Count})");
+            Asserter.SizeMatch(Edge, expectedLen, nameof(Edge));;
         }
         public virtual void Resize(int size, NativeArrayOptions options = NativeArrayOptions.UninitializedMemory)
         {

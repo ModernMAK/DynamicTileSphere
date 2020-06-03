@@ -1,9 +1,29 @@
 ﻿using System.Collections.Generic;
 using Graphing.Position.Generic;
+using ModernMAK.Graphing.Native;
+using ModernMAK.Graphing.Native.Generic;
 using ProceduralMeshFramework;
+using Unity.Mathematics;
 
 namespace GraphToMesh
 {
+    public class NativeGraphMesher<TGraph, TPolyData, TEdgeData, TNodeData>
+        where TGraph : Graph<TPolyData, TEdgeData, TNodeData>
+        where TPolyData : PolygonData
+        where TEdgeData : EdgeData
+        where TNodeData : PositionNodeData<float3>
+    {
+        public virtual void Generate(TGraph graph)
+        {
+            foreach (var poly in graph.Polys)
+                RenderPoly(poly);
+            foreach (var edge in graph.Edges)
+                Render(edge);
+        }
+
+        protected abstract void RenderPoly(TGraph graph, int polyIndex);
+    }
+
     public class GraphMeshBuilder<GraphT, PolyT, EdgeT, NodeT> : ProceduralMeshBuilder
         where GraphT : PositionGraph<PolyT, EdgeT, NodeT>
         where PolyT : PositionPoly<PolyT, EdgeT, NodeT>, new()

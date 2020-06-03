@@ -9,24 +9,44 @@ namespace ModernMAK.Graphing.Native
 {
     public class EdgeData : IDisposable, IBinarySerializable
     {
+        public EdgeData(Allocator allocator = Allocator.Persistent)
+        {
+            Count = 0;
+            Node = new NativeList<int>(allocator);
+            Poly = new NativeList<int>(allocator);
+            Twin = new NativeList<int>(allocator);
+            Next = new NativeList<int>(allocator);
+            Prev = new NativeList<int>(allocator);
+        }
+
+        public EdgeData(int size, Allocator allocator = Allocator.Persistent)
+        {
+            Node = new NativeList<int>(size, allocator);
+            Poly = new NativeList<int>(size, allocator);
+            Twin = new NativeList<int>(size, allocator);
+            Next = new NativeList<int>(size, allocator);
+            Prev = new NativeList<int>(size, allocator);
+        }
+
         public NativeList<int> Node { get; }
         public NativeList<int> Poly { get; }
         public NativeList<int> Twin { get; }
         public NativeList<int> Next { get; }
         public NativeList<int> Prev { get; }
-        
+
         public int Count { get; set; }
+
         public virtual void Resize(int size, NativeArrayOptions options = NativeArrayOptions.UninitializedMemory)
         {
             Count = size;
-            Node.Resize(size,options);
-            Poly.Resize(size,options);
-            Twin.Resize(size,options);
-            Next.Resize(size,options);
-            Prev.Resize(size,options);
+            Node.Resize(size, options);
+            Poly.Resize(size, options);
+            Twin.Resize(size, options);
+            Next.Resize(size, options);
+            Prev.Resize(size, options);
         }
-        
-        
+
+
         //SHOULD ONLY BE USED FOR TESTING
         public virtual bool Validate()
         {
@@ -48,15 +68,15 @@ namespace ModernMAK.Graphing.Native
         public virtual void Assert()
         {
             var expectedLen = Count;
-            if(expectedLen != Node.Length)
+            if (expectedLen != Node.Length)
                 throw new Exception($"{nameof(Node.Length)} size mismatch! ({Node.Length} != {Count})");
-            if(expectedLen != Poly.Length)
+            if (expectedLen != Poly.Length)
                 throw new Exception($"{nameof(Poly.Length)} size mismatch! ({Poly.Length} != {Count})");
-            if(expectedLen != Twin.Length)
+            if (expectedLen != Twin.Length)
                 throw new Exception($"{nameof(Twin.Length)} size mismatch! ({Twin.Length} != {Count})");
-            if(expectedLen != Next.Length)
+            if (expectedLen != Next.Length)
                 throw new Exception($"{nameof(Next.Length)} size mismatch! ({Next.Length} != {Count})");
-            if(expectedLen != Prev.Length)
+            if (expectedLen != Prev.Length)
                 throw new Exception($"{nameof(Prev.Length)} size mismatch! ({Prev.Length} != {Count})");
         }
 
@@ -81,16 +101,16 @@ namespace ModernMAK.Graphing.Native
 
         public virtual void Read(BinaryReader reader)
         {
-            var size =  reader.ReadInt32();
+            var size = reader.ReadInt32();
             Resize(size);
-            reader.ReadList(Node,Count);
-            reader.ReadList(Poly,Count);
-            reader.ReadList(Twin,Count);
-            reader.ReadList(Next,Count);
-            reader.ReadList(Prev,Count);
+            reader.ReadList(Node, Count);
+            reader.ReadList(Poly, Count);
+            reader.ReadList(Twin, Count);
+            reader.ReadList(Next, Count);
+            reader.ReadList(Prev, Count);
         }
-        
-        
+
+
         public IEnumerable<int> WalkPolygon(int index)
         {
             var start = index;
@@ -101,9 +121,9 @@ namespace ModernMAK.Graphing.Native
                 //Traverse across all edges (keeping polygon same) until we reach start
                 current = Next[current];
                 yield return current;
-
             } while (start != current);
         }
+
         public IEnumerable<int> WalkNode(int index)
         {
             var start = index;
@@ -115,7 +135,6 @@ namespace ModernMAK.Graphing.Native
                 current = Twin[current];
                 current = Next[current];
                 yield return current;
-
             } while (start != current);
         }
     }

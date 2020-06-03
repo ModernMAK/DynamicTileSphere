@@ -9,17 +9,20 @@ namespace ModernMAK.Graphing.Native
 {
     public class NodeData : IDisposable, IBinarySerializable
     {
-        protected NodeData(int initialSize, Allocator allocator)
+        public NodeData(Allocator allocator = Allocator.Persistent)
+        {
+            Count = 0;
+            Edge = new NativeList<int>(allocator);
+        }
+
+        public NodeData(int initialSize, Allocator allocator = Allocator.Persistent)
         {
             Count = initialSize;
             Edge = new NativeList<int>(initialSize, allocator);
         }
 
-        //ID is index so we can optimize that away!
-//            public NativeList<int> Id { get; }
-        //Still, we keep a Count which represents the # of nodes
-        //This way we can avoid relying on an arbitrary list for consistancies.
-        public int Count { get; set; }
+        //ID is index!
+        public int Count { get; private set; }
         public NativeList<int> Edge { get; }
 
         //SHOULD ONLY BE USED FOR TESTING
@@ -89,8 +92,13 @@ namespace ModernMAK.Graphing.Native
     //For this project i only need float3, but by abstracting it, position could be any arbitrary type and dimension
     public class PositionNodeData<TPos> : NodeData where TPos : struct
     {
-        public PositionNodeData(int initialSize, Allocator allocator = Allocator.Persistent) :
-            base(initialSize, allocator)
+        public PositionNodeData(Allocator allocator = Allocator.Persistent) : base(allocator)
+        {
+            Position = new NativeList<TPos>(allocator);
+        }
+
+        public PositionNodeData(int initialSize, Allocator allocator = Allocator.Persistent) : base(initialSize,
+            allocator)
         {
             Position = new NativeList<TPos>(initialSize, allocator);
         }
@@ -119,6 +127,14 @@ namespace ModernMAK.Graphing.Native
         {
             base.Dispose();
             Position.Dispose();
+        }
+
+        public override void Assert()
+        {
+            base.Assert();
+            var expectedLen = Count;
+            if (expectedLen != Position.Length)
+                throw new Exception($"{nameof(Position.Length)} size mismatch! ({Position.Length} != {Count})");
         }
     }
 }

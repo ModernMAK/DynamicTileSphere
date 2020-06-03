@@ -7,6 +7,7 @@ using UnityEngine;
 
 namespace GraphToMesh
 {
+    
     public class MeshGraphConverter
     {
         public static PositionGraph CreateGraph(ProceduralMeshBuilder pmb)

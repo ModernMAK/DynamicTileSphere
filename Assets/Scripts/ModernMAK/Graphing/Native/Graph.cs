@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using ModernMAK.Graphing.Native.Generic;
 using ModernMAK.Serialization;
 
 namespace ModernMAK.Graphing.Native
@@ -12,9 +13,16 @@ namespace ModernMAK.Graphing.Native
             where TEdgeData : EdgeData
             where TNodeData : NodeData
         {
-            public TPolyData Polygons { get; private set; }
-            public TEdgeData Edges { get; private set; }
-            public TNodeData Nodes { get; private set; }
+          
+            public Graph(TPolyData polyData, TEdgeData edgeData, TNodeData nodeData)
+            {
+                Polygons = polyData;
+                Edges = edgeData;
+                Nodes = nodeData;
+            }
+            public TPolyData Polygons { get; protected set; }
+            public TEdgeData Edges { get; protected set; }
+            public TNodeData Nodes { get; protected set; }
             
             public void Write(BinaryWriter writer)
             {
@@ -40,10 +48,13 @@ namespace ModernMAK.Graphing.Native
     }
     public class Graph : Generic.Graph<PolygonData,EdgeData,NodeData>
     {
-    }
-    public class PositionGraph<TPos> : Generic.Graph<PolygonData,EdgeData,PositionNodeData<TPos>> where TPos : struct
+        public Graph(PolygonData polyData, EdgeData edgeData, NodeData nodeData) : base(polyData, edgeData, nodeData)
+        {
+        }
 
-    {
+        public Graph() : base(new PolygonData(), new EdgeData(), new NodeData())
+        {
+            
+        }
     }
-
 }
