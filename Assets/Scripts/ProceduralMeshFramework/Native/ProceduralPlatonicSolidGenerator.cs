@@ -1,13 +1,17 @@
-﻿using System;
+﻿using Graphing.Position.Generic.Native;
+using Graphing.Position.Native;
+using System;
+using Unity.Mathematics;
 using UnityEngine;
 
 namespace ProceduralMeshFramework.NNative
 {
-    public static class ProceduralPlatonicSolidGenerator
+
+    public static class RadiusShapeUtil 
     {
+
         private const float
             PHI = 1.61803398875f,
-            INV_PHI = 1f / PHI,
 
             //These 4 numbers are used for the Cirucm/Mid/In radius stuff
             XI = 1.17557050458f,
@@ -34,80 +38,281 @@ namespace ProceduralMeshFramework.NNative
             IcosahedronMidradius = PHI,
             IcosahedronInradius = XI * PHI;
 
-
-        private static readonly ProceduralVertex[] TetrahedronVerticies = new ProceduralVertex[4]
+        public static float GetConversion(ShapeType shape, RadiusType radius)
         {
-            new ProceduralVertex(new Vector3(1f, 1f, 1f).normalized),
-            new ProceduralVertex(new Vector3(1f, -1f, -1f).normalized),
-            new ProceduralVertex(new Vector3(-1f, 1f, -1f).normalized),
-            new ProceduralVertex(new Vector3(-1f, -1f, 1f).normalized)
+            switch (shape)
+            {
+                case ShapeType.Tetrahedron:
+                    switch (radius)
+                    {
+                        case RadiusType.Circumradius:
+                            return TetrahedronCircumradius;
+                        case RadiusType.Midradius:
+                            return TetrahedronMidradius;
+                        case RadiusType.Inradius:
+                            return TetrahedronInradius;
+                        case RadiusType.Normalized:
+                            return 1f;
+                    }
+
+                    break;
+                case ShapeType.Octahedron:
+                    switch (radius)
+                    {
+                        case RadiusType.Circumradius:
+                            return OctahedronCircumradius;
+                        case RadiusType.Midradius:
+                            return OctahedronMidradius;
+                        case RadiusType.Inradius:
+                            return OctahedronInradius;
+                        case RadiusType.Normalized:
+                            return 1f;
+                    }
+
+                    break;
+                case ShapeType.Cube:
+                    switch (radius)
+                    {
+                        case RadiusType.Circumradius:
+                            return CubeCircumradius;
+                        case RadiusType.Midradius:
+                            return CubeMidradius;
+                        case RadiusType.Inradius:
+                            return CubeInradius;
+                        case RadiusType.Normalized:
+                            return 1f;
+                    }
+
+                    break;
+                case ShapeType.Icosahedron:
+                    switch (radius)
+                    {
+                        case RadiusType.Circumradius:
+                            return IcosahedronCircumradius;
+                        case RadiusType.Midradius:
+                            return IcosahedronMidradius;
+                        case RadiusType.Inradius:
+                            return IcosahedronInradius;
+                        case RadiusType.Normalized:
+                            return 1f;
+                    }
+
+                    break;
+                case ShapeType.Dodecahedron:
+                    switch (radius)
+                    {
+                        case RadiusType.Circumradius:
+                            return DodecahedronCircumradius;
+                        case RadiusType.Midradius:
+                            return DodecahedronMidradius;
+                        case RadiusType.Inradius:
+                            return DodecahedronInradius;
+                        case RadiusType.Normalized:
+                            return 1f;
+                    }
+
+                    break;
+                default:
+                    throw new Exception("Shape must be of an enumerated type!");
+            }
+
+            throw new Exception("Radius must be of an enumerated type!");
+        }
+    }
+
+    public static class Tetrahedron
+    {
+        private const float
+            SQRT_6 = 2.44948974278f,
+            SQRT_2 = 1.41421356237f,
+            SQRT_3 = 1.73205080757f;
+
+        //ALL Shapes have a circumradius of 1, to convert to their original circumradius, multiply by the circumradius, to conver to their mid or inradius, divide by the circumradius (when at 1), then multiply by the inradius 
+        //Dont know what these are? Look at this (https://en.wikipedia.org/wiki/Platonic_solid) bout midway down the page
+        public const float
+            CircumRadius = SQRT_3 / SQRT_2,
+            MidRadius = 1 / SQRT_2,
+            InRadius = 1 / SQRT_6;
+
+        public static float GetRadius(RadiusType radius)
+        {
+            switch (radius)
+            {
+                case RadiusType.Circumradius:
+                    return CircumRadius;
+                case RadiusType.Midradius:
+                    return MidRadius;
+                case RadiusType.Inradius:
+                    return InRadius;
+                case RadiusType.Normalized:
+                    return 1f;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(radius));
+            }
+        }
+
+        public const int PolyCount = 4;//4 Polygons
+        public const int SoftVertCount = 4;//4 Polygons (Triangles), 3 Half Edges Per Polygon (Triangle)
+        public const int PolyVertCount = 3;
+        private static readonly float3[] Vertexes = new float3[SoftVertCount]
+        {
+            math.normalize(new float3(1f, 1f, 1f)),
+            math.normalize(new float3(1f, -1f, -1f)),
+            math.normalize(new float3(-1f, 1f, -1f)),
+            math.normalize(new float3(-1f, -1f, 1f))
+        };
+        /// <summary>
+        /// 4 Triangles ~ [PolygonIndex, VertexIndex]
+        /// Order matters if converting to mesh, not converting to graph
+        /// </summary>
+        /// <remarks>Changing this will require Twins, NodeEdges, & PolyEdges to be updated.</remarks>
+        private static readonly int[,] Indexes = new int[PolyCount, PolyVertCount]
+        {
+            { 0, 1, 2 },
+            { 3, 1, 0 },
+            { 0, 2, 3 },
+            { 3, 2, 1 },
         };
 
-        private static readonly ProceduralVertex[] OctahedronVerticies = new ProceduralVertex[6]
+        //Hardcoded to avoid writing an algorithm for something that could be calculated once; this does mean this breaks if we change the INDEXES
+        private static readonly int[,] Twins = new int[PolyCount, PolyVertCount]
         {
-            new ProceduralVertex(new Vector3(1f, 0f, 0f).normalized),
-            new ProceduralVertex(new Vector3(0f, 1f, 0f).normalized),
-            new ProceduralVertex(new Vector3(0f, 0f, 1f).normalized),
-            new ProceduralVertex(new Vector3(-1f, 0f, 0f).normalized),
-            new ProceduralVertex(new Vector3(0f, -1f, 0f).normalized),
-            new ProceduralVertex(new Vector3(0f, 0f, -1f).normalized)
+            { 4, 10, 6 },
+            { 11, 0, 8 },
+            { 2, 9, 5 },
+            { 7, 1, 3 },
+        };
+        private static readonly int[] NodeEdges = new int[SoftVertCount] { 0, 1, 2, 3 }; // Not all edges will be this cut and dry
+        private static readonly int[] PolyEdges = new int[SoftVertCount] { 0, 3, 6, 9 }; // Not all edges will be this cut and dry
+
+
+        /// <summary>
+        /// Builds a soft graph.
+        /// </summary>
+        /// <returns></returns>
+        public static PositionGraph BuildGraph()
+		{
+
+            var graph = new PositionGraph(Vertexes.Length, PolyCount * PolyVertCount, PolyCount);
+            //Initilaize Vertexes
+            for(var i = 0; i < Vertexes.Length; i++)
+			{
+                var node = graph.Nodes[i];
+                node.Data = new PositionData { Position = Vertexes[i] };
+                node.Edge = NodeEdges[i];
+                graph.Nodes[i] = node;
+            }
+            // Initilalize Polygons & Edges
+            for (var polyIndex = 0; polyIndex < PolyCount; polyIndex++)
+            {
+                var poly = graph.Polygons[polyIndex];
+                poly.Edge = PolyEdges[polyIndex];
+                graph.Polygons[polyIndex] = poly;
+
+
+                var edgeOffset = polyIndex * PolyVertCount;
+                //Initialize Edges
+                for (var edgeIndex = 0; edgeIndex < PolyVertCount; edgeIndex++)
+                {
+                    var edge = graph.Edges[edgeOffset + edgeIndex];
+                    
+                    edge.Next = edgeOffset + (edgeIndex + 1) % PolyVertCount;
+                    edge.Prev = edgeOffset + (edgeIndex + PolyVertCount - 1) % PolyVertCount;
+                    
+                    edge.Twin = Twins[polyIndex, edgeIndex];
+                    edge.Node = Indexes[polyIndex, edgeIndex];
+                    
+                    edge.Poly = polyIndex;
+
+                    graph.Edges[edgeOffset + edgeIndex] = edge;
+                }
+
+            }
+            return graph;
+		}
+    }
+
+    public static class ProceduralPlatonicSolidGenerator
+    {
+        private const float
+            PHI = 1.61803398875f,
+            INV_PHI = 1f / PHI,
+
+            //These 4 numbers are used for the Cirucm/Mid/In radius stuff
+            XI = 1.17557050458f,
+            SQRT_6 = 2.44948974278f,
+            SQRT_2 = 1.41421356237f,
+            SQRT_3 = 1.73205080757f;
+            
+
+
+        
+
+        private static readonly float3[] OctahedronVerticies = new float3[6]
+        {
+            math.normalize(new float3(1f, 0f, 0f)),
+            math.normalize(new float3(0f, 1f, 0f)),
+            math.normalize(new float3(0f, 0f, 1f)),
+            math.normalize(new float3(-1f, 0f, 0f)),
+            math.normalize(new float3(0f, -1f, 0f)),
+            math.normalize(new float3(0f, 0f, -1f))
         };
 
-        private static readonly ProceduralVertex[] CubeVerticies = new ProceduralVertex[8]
+        private static readonly float3[] CubeVerticies = new float3[8]
         {
-            new ProceduralVertex(new Vector3(1f, 1f, 1f).normalized),
-            new ProceduralVertex(new Vector3(1f, 1f, -1f).normalized),
-            new ProceduralVertex(new Vector3(1f, -1f, 1f).normalized),
-            new ProceduralVertex(new Vector3(1f, -1f, -1f).normalized),
-            new ProceduralVertex(new Vector3(-1f, 1f, 1f).normalized),
-            new ProceduralVertex(new Vector3(-1f, 1f, -1f).normalized),
-            new ProceduralVertex(new Vector3(-1f, -1f, 1f).normalized),
-            new ProceduralVertex(new Vector3(-1f, -1f, -1f).normalized)
+            math.normalize(new float3(1f, 1f, 1f)),
+            math.normalize(new float3(1f, 1f, -1f)),
+            math.normalize(new float3(1f, -1f, 1f)),
+            math.normalize(new float3(1f, -1f, -1f)),
+            math.normalize(new float3(-1f, 1f, 1f)),
+            math.normalize(new float3(-1f, 1f, -1f)),
+            math.normalize(new float3(-1f, -1f, 1f)),
+            math.normalize(new float3(-1f, -1f, -1f))
         };
 
-        private static readonly ProceduralVertex[] IcosahedronVerticies = new ProceduralVertex[12]
+        private static readonly float3[] IcosahedronVerticies = new float3[12]
         {
-            new ProceduralVertex(new Vector3(0f, 1f, PHI).normalized),
-            new ProceduralVertex(new Vector3(0f, -1f, PHI).normalized),
-            new ProceduralVertex(new Vector3(0f, 1f, -PHI).normalized),
-            new ProceduralVertex(new Vector3(0f, -1f, -PHI).normalized),
+            math.normalize(new float3(0f, 1f, PHI)),
+            math.normalize(new float3(0f, -1f, PHI)),
+            math.normalize(new float3(0f, 1f, -PHI)),
+            math.normalize(new float3(0f, -1f, -PHI)),
 
-            new ProceduralVertex(new Vector3(1f, PHI, 0f).normalized),
-            new ProceduralVertex(new Vector3(-1f, PHI, 0f).normalized),
-            new ProceduralVertex(new Vector3(1f, -PHI, 0f).normalized),
-            new ProceduralVertex(new Vector3(-1f, -PHI, 0f).normalized),
+            math.normalize(new float3(1f, PHI, 0f)),
+            math.normalize(new float3(-1f, PHI, 0f)),
+            math.normalize(new float3(1f, -PHI, 0f)),
+            math.normalize(new float3(-1f, -PHI, 0f)),
 
-            new ProceduralVertex(new Vector3(PHI, 0f, 1f).normalized),
-            new ProceduralVertex(new Vector3(PHI, 0f, -1f).normalized),
-            new ProceduralVertex(new Vector3(-PHI, 0f, 1f).normalized),
-            new ProceduralVertex(new Vector3(-PHI, 0f, -1f).normalized)
+            math.normalize(new float3(PHI, 0f, 1f)),
+            math.normalize(new float3(PHI, 0f, -1f)),
+            math.normalize(new float3(-PHI, 0f, 1f)),
+            math.normalize(new float3(-PHI, 0f, -1f))
         };
 
-        private static readonly ProceduralVertex[] DodecahedronVerticies = new ProceduralVertex[20]
+        private static readonly float3[] DodecahedronVerticies = new float3[20]
         {
-            new ProceduralVertex(new Vector3(1f, 1f, 1f).normalized), //0
-            new ProceduralVertex(new Vector3(1f, 1f, -1f).normalized), //1
-            new ProceduralVertex(new Vector3(1f, -1f, 1f).normalized), //2
-            new ProceduralVertex(new Vector3(1f, -1f, -1f).normalized), //3
-            new ProceduralVertex(new Vector3(-1f, 1f, 1f).normalized), //4
-            new ProceduralVertex(new Vector3(-1f, 1f, -1f).normalized), //5
-            new ProceduralVertex(new Vector3(-1f, -1f, 1f).normalized), //6
-            new ProceduralVertex(new Vector3(-1f, -1f, -1f).normalized), //7
+            math.normalize(new float3(1f, 1f, 1f)), //0
+            math.normalize(new float3(1f, 1f, -1f)), //1
+            math.normalize(new float3(1f, -1f, 1f)), //2
+            math.normalize(new float3(1f, -1f, -1f)), //3
+            math.normalize(new float3(-1f, 1f, 1f)), //4
+            math.normalize(new float3(-1f, 1f, -1f)), //5
+            math.normalize(new float3(-1f, -1f, 1f)), //6
+            math.normalize(new float3(-1f, -1f, -1f)), //7
 
-            new ProceduralVertex(new Vector3(0f, INV_PHI, PHI).normalized), //8
-            new ProceduralVertex(new Vector3(0f, -INV_PHI, PHI).normalized), //9
-            new ProceduralVertex(new Vector3(0f, INV_PHI, -PHI).normalized), //10
-            new ProceduralVertex(new Vector3(0f, -INV_PHI, -PHI).normalized), //11
+            math.normalize(new float3(0f, INV_PHI, PHI)), //8
+            math.normalize(new float3(0f, -INV_PHI, PHI)), //9
+            math.normalize(new float3(0f, INV_PHI, -PHI)), //10
+            math.normalize(new float3(0f, -INV_PHI, -PHI)), //11
 
-            new ProceduralVertex(new Vector3(INV_PHI, PHI, 0f).normalized), //12
-            new ProceduralVertex(new Vector3(-INV_PHI, PHI, 0f).normalized), //13
-            new ProceduralVertex(new Vector3(INV_PHI, -PHI, 0f).normalized), //14
-            new ProceduralVertex(new Vector3(-INV_PHI, -PHI, 0f).normalized), //15
+            math.normalize(new float3(INV_PHI, PHI, 0f)), //12
+            math.normalize(new float3(-INV_PHI, PHI, 0f)), //13
+            math.normalize(new float3(INV_PHI, -PHI, 0f)), //14
+            math.normalize(new float3(-INV_PHI, -PHI, 0f)), //15
 
-            new ProceduralVertex(new Vector3(PHI, 0f, INV_PHI).normalized), //16
-            new ProceduralVertex(new Vector3(PHI, 0f, -INV_PHI).normalized), //17
-            new ProceduralVertex(new Vector3(-PHI, 0f, INV_PHI).normalized), //18
-            new ProceduralVertex(new Vector3(-PHI, 0f, -INV_PHI).normalized) //19            
+            math.normalize(new float3(PHI, 0f, INV_PHI)), //16
+            math.normalize(new float3(PHI, 0f, -INV_PHI)), //17
+            math.normalize(new float3(-PHI, 0f, INV_PHI)), //18
+            math.normalize(new float3(-PHI, 0f, -INV_PHI)) //19            
         };
 
         private static readonly ProceduralMeshBuilder TetrahedronPrototype = BuildTetrahedronPrototype();
@@ -120,13 +325,13 @@ namespace ProceduralMeshFramework.NNative
 
         private static readonly ProceduralMeshBuilder DodecahedronPrototype = BuildDodecahedronPrototype();
 
-        private static ProceduralVertex ModifyVertex(ProceduralVertex proceduralVertex,
+        private static float3 ModifyVertex(float3 proceduralVertex,
             Quaternion rotation, /* bool normalize = true,*/ bool right = false)
         {
             //if (normalize)
-            //    vertex.Position = vertex.Position.normalized;
+            //    vertex.Position = vertex.Position;
             proceduralVertex = rotation * proceduralVertex;
-            proceduralVertex.Normal = proceduralVertex.Position.normalized;
+            proceduralVertex.Normal = proceduralVertex.Position;
             var vertexRotation = Quaternion.FromToRotation(Vector3.forward, proceduralVertex.Normal);
             proceduralVertex.Tangent = vertexRotation * Vector3.right;
             proceduralVertex.RightHanded = right;
@@ -146,10 +351,6 @@ namespace ProceduralMeshFramework.NNative
                 builder.AddVertex(modifiedVertex);
             }
 
-            builder.AddTriangle(0, 1, 2);
-            builder.AddTriangle(3, 1, 0);
-            builder.AddTriangle(0, 2, 3);
-            builder.AddTriangle(3, 2, 1);
 
             return builder;
         }
@@ -292,7 +493,7 @@ namespace ProceduralMeshFramework.NNative
             for (var i = 0; i < groups.GetLength(0); i++)
             {
                 var l = groups.GetLength(1);
-                var midpoint = new ProceduralVertex();
+                var midpoint = new float3();
                 for (var j = 0; j < l; j++) midpoint += verts[groups[i, j]];
                 midpoint /= l;
                 midpoint = ModifyVertex(midpoint, rotation);

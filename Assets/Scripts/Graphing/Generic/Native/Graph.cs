@@ -49,11 +49,10 @@ namespace Graphing.Generic.Native
             Polygons = new NativeList<PolyT>(polyCapacity, Allocator.Persistent);
         }
 
-        public NativeList<VertexT> Nodes { get; private set; }
+        public NativeList<VertexT> Nodes;
 
-        public NativeList<EdgeT> Edges { get; private set; }
-
-        public NativeList<PolyT> Polygons { get; private set; }
+        public NativeList<EdgeT> Edges;
+        public NativeList<PolyT> Polygons;
 
         public IEnumerable<EdgeT> WalkPolygonEdges(IPolygon poly)
         {
