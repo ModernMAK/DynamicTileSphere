@@ -7,7 +7,7 @@ using ProceduralMeshFramework;
 using UnityEngine;
 using UnityEngine.UI;
 
-public class OptionsPanel : MonoBehaviour
+public class PlanetOptionsPanel : MonoBehaviour
 {
     [SerializeField] private ProceduralPlanetMesh _ppm;
     [SerializeField] private InputField _seed;
