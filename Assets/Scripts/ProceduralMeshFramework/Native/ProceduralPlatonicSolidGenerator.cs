@@ -154,6 +154,7 @@ namespace ProceduralMeshFramework.NNatives
 
         public const float
             PHI = 1.61803398875f,
+            INV_PHI = 1 / PHI,
 
             //These 4 numbers are used for the Cirucm/Mid/In radius stuff
             XI = 1.17557050458f,
@@ -161,105 +162,6 @@ namespace ProceduralMeshFramework.NNatives
             SQRT_2 = 1.41421356237f,
             SQRT_3 = 1.73205080757f;
 
-        //ALL Shapes have a circumradius of 1, to convert to their original circumradius, multiply by the circumradius, to conver to their mid or inradius, divide by the circumradius (when at 1), then multiply by the inradius 
-        //Dont know what these are? Look at this (https://en.wikipedia.org/wiki/Platonic_solid) bout midway down the page
-        public const float
-            TetrahedronCircumradius = SQRT_3 / SQRT_2,
-            TetrahedronMidradius = 1 / SQRT_2,
-            TetrahedronInradius = 1 / SQRT_6,
-            CubeCircumradius = SQRT_3,
-            CubeMidradius = SQRT_2,
-            CubeInradius = 1f,
-            OctahedronCircumradius = SQRT_2,
-            OctahedronMidradius = 1,
-            OctahedronInradius = SQRT_2 / SQRT_3,
-            DodecahedronCircumradius = PHI * PHI / XI,
-            DodecahedronMidradius = PHI * PHI,
-            DodecahedronInradius = SQRT_3 * PHI,
-            IcosahedronCircumradius = PHI * PHI / SQRT_3,
-            IcosahedronMidradius = PHI,
-            IcosahedronInradius = XI * PHI;
-
-        public static float GetConversion(ShapeType shape, RadiusType radius)
-        {
-            switch (shape)
-            {
-                case ShapeType.Tetrahedron:
-                    switch (radius)
-                    {
-                        case RadiusType.Circumradius:
-                            return TetrahedronCircumradius;
-                        case RadiusType.Midradius:
-                            return TetrahedronMidradius;
-                        case RadiusType.Inradius:
-                            return TetrahedronInradius;
-                        case RadiusType.Normalized:
-                            return 1f;
-                    }
-
-                    break;
-                case ShapeType.Octahedron:
-                    switch (radius)
-                    {
-                        case RadiusType.Circumradius:
-                            return OctahedronCircumradius;
-                        case RadiusType.Midradius:
-                            return OctahedronMidradius;
-                        case RadiusType.Inradius:
-                            return OctahedronInradius;
-                        case RadiusType.Normalized:
-                            return 1f;
-                    }
-
-                    break;
-                case ShapeType.Cube:
-                    switch (radius)
-                    {
-                        case RadiusType.Circumradius:
-                            return CubeCircumradius;
-                        case RadiusType.Midradius:
-                            return CubeMidradius;
-                        case RadiusType.Inradius:
-                            return CubeInradius;
-                        case RadiusType.Normalized:
-                            return 1f;
-                    }
-
-                    break;
-                case ShapeType.Icosahedron:
-                    switch (radius)
-                    {
-                        case RadiusType.Circumradius:
-                            return IcosahedronCircumradius;
-                        case RadiusType.Midradius:
-                            return IcosahedronMidradius;
-                        case RadiusType.Inradius:
-                            return IcosahedronInradius;
-                        case RadiusType.Normalized:
-                            return 1f;
-                    }
-
-                    break;
-                case ShapeType.Dodecahedron:
-                    switch (radius)
-                    {
-                        case RadiusType.Circumradius:
-                            return DodecahedronCircumradius;
-                        case RadiusType.Midradius:
-                            return DodecahedronMidradius;
-                        case RadiusType.Inradius:
-                            return DodecahedronInradius;
-                        case RadiusType.Normalized:
-                            return 1f;
-                    }
-
-                    break;
-                default:
-                    throw new Exception("Shape must be of an enumerated type!");
-            }
-
-            throw new Exception("Radius must be of an enumerated type!");
-        }
     }
 
 
@@ -329,7 +231,7 @@ namespace ProceduralMeshFramework.NNatives
         /// <returns></returns>
         public static PositionGraph BuildGraph() => SharedUtil.BuildGraph(Vertexes, Indexes, NodeEdges, PolyEdges, Twins);
     }
-    public static class Octohedron
+    public static class Octahedron
     {
         private const float
             SQRT_2 = SharedUtil.SQRT_2,
@@ -481,7 +383,6 @@ namespace ProceduralMeshFramework.NNatives
     public static class Icosahedron
     {
         private const float
-            SQRT_2 = SharedUtil.SQRT_2,
             SQRT_3 = SharedUtil.SQRT_3,
             PHI = SharedUtil.PHI,
             XI = SharedUtil.XI;
@@ -577,23 +478,43 @@ namespace ProceduralMeshFramework.NNatives
         /// <returns></returns>
         public static PositionGraph BuildGraph() => SharedUtil.BuildGraph(Vertexes, Indexes, NodeEdges, PolyEdges, Twins);
     }
-
-    public static class ProceduralPlatonicSolidGenerator
+    public static class Dodecahedron
     {
         private const float
-            PHI = 1.61803398875f,
-            INV_PHI = 1f / PHI,
+            SQRT_2 = SharedUtil.SQRT_2,
+            SQRT_3 = SharedUtil.SQRT_3,
+            PHI = SharedUtil.PHI,
+            INV_PHI = SharedUtil.INV_PHI,
+            XI = SharedUtil.XI;
 
-            //These 4 numbers are used for the Cirucm/Mid/In radius stuff
-            XI = 1.17557050458f,
-            SQRT_6 = 2.44948974278f,
-            SQRT_2 = 1.41421356237f,
-            SQRT_3 = 1.73205080757f;
-            
+        //ALL Shapes have a circumradius of 1, to convert to their original circumradius, multiply by the circumradius, to conver to their mid or inradius, divide by the circumradius (when at 1), then multiply by the inradius 
+        //Dont know what these are? Look at this (https://en.wikipedia.org/wiki/Platonic_solid) bout midway down the page
+        public const float
+            CircumRadius = PHI * PHI / XI,
+            MidRadius = PHI * PHI,
+            InRadius = SQRT_3 * PHI;
 
+        public static float GetRadius(RadiusType radius)
+        {
+            switch (radius)
+            {
+                case RadiusType.Circumradius:
+                    return CircumRadius;
+                case RadiusType.Midradius:
+                    return MidRadius;
+                case RadiusType.Inradius:
+                    return InRadius;
+                case RadiusType.Normalized:
+                    return 1f;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(radius));
+            }
+        }
 
-
-        private static readonly float3[] DodecahedronVerticies = new float3[20]
+        public const int PolyCount = 12;
+        public const int SoftVertCount = 20;
+        public const int PolyVertCount = 5;
+        private static readonly float3[] Vertexes = new float3[SoftVertCount]
         {
             math.normalize(new float3(1f, 1f, 1f)), //0
             math.normalize(new float3(1f, 1f, -1f)), //1
@@ -617,118 +538,80 @@ namespace ProceduralMeshFramework.NNatives
             math.normalize(new float3(PHI, 0f, INV_PHI)), //16
             math.normalize(new float3(PHI, 0f, -INV_PHI)), //17
             math.normalize(new float3(-PHI, 0f, INV_PHI)), //18
-            math.normalize(new float3(-PHI, 0f, -INV_PHI)) //19            
+            math.normalize(new float3(-PHI, 0f, -INV_PHI)) //19          
         };
-
-        private static ProceduralMeshBuilder BuildIcosahedronPrototype()
+        /// <summary>
+        /// 4 Triangles ~ [PolygonIndex, VertexIndex]
+        /// Order matters if converting to mesh, not converting to graph
+        /// </summary>
+        /// <remarks>Changing this will require Twins, NodeEdges, & PolyEdges to be updated.</remarks>
+        private static readonly int[,] _Indexes = new int[PolyCount, PolyVertCount]
         {
-            var verts = IcosahedronVerticies;
-            var builder = new ProceduralMeshBuilder();
-            var rotation = Quaternion.FromToRotation(Vector3.up, verts[0].Position);
-            var vertexCount = verts.Length;
+            {0, 16, 17, 1, 12},
+            {2, 16, 0, 8, 9},
+            {14, 3, 17, 16, 2},
+            {0, 12, 13, 4, 8},
+            {1, 10, 5, 13, 12},
+            {13, 5, 19, 18, 4},
+            {6, 9, 8, 4, 18},
+            {2, 9, 6, 15, 14},
+            {1, 17, 3, 11, 10},
+            {7, 19, 5, 10, 11},
+            {3, 14, 15, 7, 11},
+            {19, 7, 15, 6, 18}
+        };
+        private static readonly int[] Indexes = SharedUtil.Flatten(_Indexes);
 
-            for (var i = 0; i < vertexCount; i++)
-            {
-                var modifiedVertex = ModifyVertex(verts[i], rotation);
-                builder.AddVertex(modifiedVertex);
-            }
+        //Hardcoded to avoid writing an algorithm for something that could be calculated once; this does mean this breaks if we change the INDEXES
+        private static readonly int[] Twins = SharedUtil.CalculateTwins(Indexes, PolyCount);
+        private static readonly int[] NodeEdges = SharedUtil.CalculateNodeEdges(Indexes, PolyCount);
+        private static readonly int[] PolyEdges = SharedUtil.CalculatePolyEdges(PolyVertCount, PolyCount);
 
 
-            return builder;
-        }
+        /// <summary>
+        /// Builds a soft graph.
+        /// </summary>
+        /// <returns></returns>
+        public static PositionGraph BuildGraph() => SharedUtil.BuildGraph(Vertexes, Indexes, NodeEdges, PolyEdges, Twins);
+    }
 
-        private static ProceduralMeshBuilder BuildDodecahedronPrototype()
+    public static class ProceduralPlatonicSolidGenerator
+    {
+        public static PositionGraph BuildGraph(ShapeType shape)
         {
-            var verts = DodecahedronVerticies;
-            var builder = new ProceduralMeshBuilder();
-            var rotation = Quaternion.FromToRotation(Vector3.up, verts[0].Position); //Quaternion.identity;
-            var vertexCount = verts.Length;
-
-            for (var i = 0; i < vertexCount; i++)
-            {
-                //After 20, it is our midpoints, which are not on the circumradius, but the inneradius... I dont know the ratio, so we just dont normalize the vector
-                var modifiedVertex = ModifyVertex(verts[i], rotation);
-
-                builder.AddVertex(modifiedVertex);
-            }
-
-            var groups = new int[12, 5]
-            {
-                {0, 16, 17, 1, 12},
-                {2, 16, 0, 8, 9},
-                {14, 3, 17, 16, 2},
-                {0, 12, 13, 4, 8},
-                {1, 10, 5, 13, 12},
-                {13, 5, 19, 18, 4},
-                {6, 9, 8, 4, 18},
-                {2, 9, 6, 15, 14},
-                {1, 17, 3, 11, 10},
-                {7, 19, 5, 10, 11},
-                {3, 14, 15, 7, 11},
-                {19, 7, 15, 6, 18}
-            };
-
-            for (var i = 0; i < groups.GetLength(0); i++)
-            {
-                var l = groups.GetLength(1);
-                var midpoint = new float3();
-                for (var j = 0; j < l; j++) midpoint += verts[groups[i, j]];
-                midpoint /= l;
-                midpoint = ModifyVertex(midpoint, rotation);
-                var midpointIndex = builder.AddVertex(midpoint);
-                for (var j = 0; j < l; j++) builder.AddTriangle(midpointIndex, groups[i, j], groups[i, (j + 1) % l]);
-            }
-
-            return builder;
-        }
-
-        private static ProceduralMeshBuilder GetBuilderPrototype(ShapeType shape)
-        {
-            ProceduralMeshBuilder builder;
             switch (shape)
             {
                 case ShapeType.Tetrahedron:
-                    builder = TetrahedronPrototype;
-                    break;
+                    return Tetrahedron.BuildGraph();
                 case ShapeType.Octahedron:
-                    builder = OctahedronPrototype;
-                    break;
+                    return Octahedron.BuildGraph();
                 case ShapeType.Cube:
-                    builder = CubePrototype;
-                    break;
+                    return Cube.BuildGraph();
                 case ShapeType.Icosahedron:
-                    builder = IcosahedronPrototype;
-                    break;
+                    return Icosahedron.BuildGraph();
                 case ShapeType.Dodecahedron:
-                    builder = DodecahedronPrototype;
-                    break;
+                    return Dodecahedron.BuildGraph();
                 default:
-                    throw new Exception("Shape must be of an enumerated type!");
+                    throw new ArgumentOutOfRangeException(nameof(shape));
             }
-
-            return builder;
         }
-
-        public static void AddToMeshBuilder(ProceduralMeshBuilder builder, ShapeType shape, RadiusType radius,
-            float scale = 1f)
+        public static float GetConversion(ShapeType shape, RadiusType radius)
         {
-            var prototype = GetBuilderPrototype(shape); //,shape,radius,scale)
-            var offset = builder.Verticies.Count;
-            foreach (var v in prototype.Verticies)
-                builder.AddVertex(v * ProceduralMeshFramework.ProceduralPlatonicSolidGenerator.GetConversion(shape, radius) * scale);
-            foreach (var t in prototype.Triangles)
-                builder.AddTriangle(t.Pivot + offset, t.Left + offset, t.Right + offset);
+            switch (shape)
+            {
+                case ShapeType.Tetrahedron:
+                    return Tetrahedron.GetRadius(radius);
+                case ShapeType.Octahedron:
+                    return Octahedron.GetRadius(radius);
+                case ShapeType.Cube:
+                    return Cube.GetRadius(radius);
+                case ShapeType.Icosahedron:
+                    return Icosahedron.GetRadius(radius);
+                case ShapeType.Dodecahedron:
+                    return Dodecahedron.GetRadius(radius);
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(shape));
+            }
         }
-
-        public static ProceduralMeshBuilder CreateBuilder(ShapeType shape, RadiusType radius = RadiusType.Circumradius,
-            float scale = 1f)
-        {
-            var builder = new ProceduralMeshBuilder(GetBuilderPrototype(shape));
-            var conversion = ProceduralMeshFramework.ProceduralPlatonicSolidGenerator.GetConversion(shape, radius);
-            if (scale * conversion != 1f) ProceduralMeshUtility.ModifyRadius(builder, scale * conversion);
-            return builder;
-        }
-
-      
     }
 }
