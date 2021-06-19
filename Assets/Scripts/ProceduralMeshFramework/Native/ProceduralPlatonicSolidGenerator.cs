@@ -478,23 +478,41 @@ namespace ProceduralMeshFramework.NNatives
         /// <returns></returns>
         public static PositionGraph BuildGraph() => SharedUtil.BuildGraph(Vertexes, Indexes, NodeEdges, PolyEdges, Twins);
     }
-
-    public static class ProceduralPlatonicSolidGenerator
+    public static class Icosahedron
     {
         private const float
-            PHI = 1.61803398875f,
-            INV_PHI = 1f / PHI,
+            SQRT_2 = SharedUtil.SQRT_2,
+            SQRT_3 = SharedUtil.SQRT_3,
+            PHI = SharedUtil.PHI,
+            XI = SharedUtil.XI;
 
-            //These 4 numbers are used for the Cirucm/Mid/In radius stuff
-            XI = 1.17557050458f,
-            SQRT_6 = 2.44948974278f,
-            SQRT_2 = 1.41421356237f,
-            SQRT_3 = 1.73205080757f;
-            
+        //ALL Shapes have a circumradius of 1, to convert to their original circumradius, multiply by the circumradius, to conver to their mid or inradius, divide by the circumradius (when at 1), then multiply by the inradius 
+        //Dont know what these are? Look at this (https://en.wikipedia.org/wiki/Platonic_solid) bout midway down the page
+        public const float
+            CircumRadius = PHI * PHI / SQRT_3,
+            MidRadius = PHI,
+            InRadius = XI * PHI;
+        public static float GetRadius(RadiusType radius)
+        {
+            switch (radius)
+            {
+                case RadiusType.Circumradius:
+                    return CircumRadius;
+                case RadiusType.Midradius:
+                    return MidRadius;
+                case RadiusType.Inradius:
+                    return InRadius;
+                case RadiusType.Normalized:
+                    return 1f;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(radius));
+            }
+        }
 
-
-
-        private static readonly float3[] IcosahedronVerticies = new float3[12]
+        public const int PolyCount = 20;
+        public const int SoftVertCount = 12;
+        public const int PolyVertCount = 3;
+        private static readonly float3[] Vertexes = new float3[SoftVertCount]
         {
             math.normalize(new float3(0f, 1f, PHI)),
             math.normalize(new float3(0f, -1f, PHI)),
@@ -511,6 +529,69 @@ namespace ProceduralMeshFramework.NNatives
             math.normalize(new float3(-PHI, 0f, 1f)),
             math.normalize(new float3(-PHI, 0f, -1f))
         };
+        /// <summary>
+        /// 4 Triangles ~ [PolygonIndex, VertexIndex]
+        /// Order matters if converting to mesh, not converting to graph
+        /// </summary>
+        /// <remarks>Changing this will require Twins, NodeEdges, & PolyEdges to be updated.</remarks>
+        private static readonly int[,] _Indexes = new int[PolyCount, PolyVertCount]
+        {
+            
+            //One peak, at 8
+            {0, 1, 8},
+            {4, 0, 8},
+            {9, 4, 8},
+            {6, 9, 8},
+            {1, 6, 8},
+
+            //The other peak, at 11
+            {5, 2, 11},
+            {2, 3, 11},
+            {3, 7, 11},
+            {7, 10, 11},
+            {10, 5, 11},
+
+            //The Strip
+            {0, 10, 1},
+            {10, 7, 1},
+            {7, 6, 1},
+            {7, 3, 6},
+            {3, 9, 6},
+            {2, 9, 3},
+            {2, 4, 9},
+            {2, 5, 4 },
+            {4, 5, 0 },
+            {5, 10, 0 }
+        };
+        private static readonly int[] Indexes = SharedUtil.Flatten(_Indexes);
+
+        //Hardcoded to avoid writing an algorithm for something that could be calculated once; this does mean this breaks if we change the INDEXES
+        private static readonly int[] Twins = SharedUtil.CalculateTwins(Indexes, PolyCount);
+        private static readonly int[] NodeEdges = SharedUtil.CalculateNodeEdges(Indexes, PolyCount);
+        private static readonly int[] PolyEdges = SharedUtil.CalculatePolyEdges(PolyVertCount, PolyCount);
+
+
+        /// <summary>
+        /// Builds a soft graph.
+        /// </summary>
+        /// <returns></returns>
+        public static PositionGraph BuildGraph() => SharedUtil.BuildGraph(Vertexes, Indexes, NodeEdges, PolyEdges, Twins);
+    }
+
+    public static class ProceduralPlatonicSolidGenerator
+    {
+        private const float
+            PHI = 1.61803398875f,
+            INV_PHI = 1f / PHI,
+
+            //These 4 numbers are used for the Cirucm/Mid/In radius stuff
+            XI = 1.17557050458f,
+            SQRT_6 = 2.44948974278f,
+            SQRT_2 = 1.41421356237f,
+            SQRT_3 = 1.73205080757f;
+            
+
+
 
         private static readonly float3[] DodecahedronVerticies = new float3[20]
         {
@@ -552,31 +633,6 @@ namespace ProceduralMeshFramework.NNatives
                 builder.AddVertex(modifiedVertex);
             }
 
-            //One peak, at 8
-            builder.AddTriangle(0, 1, 8);
-            builder.AddTriangle(4, 0, 8);
-            builder.AddTriangle(9, 4, 8);
-            builder.AddTriangle(6, 9, 8);
-            builder.AddTriangle(1, 6, 8);
-
-            //The other peak, at 11
-            builder.AddTriangle(5, 2, 11);
-            builder.AddTriangle(2, 3, 11);
-            builder.AddTriangle(3, 7, 11);
-            builder.AddTriangle(7, 10, 11);
-            builder.AddTriangle(10, 5, 11);
-
-            //The Strip
-            builder.AddTriangle(0, 10, 1);
-            builder.AddTriangle(10, 7, 1);
-            builder.AddTriangle(7, 6, 1);
-            builder.AddTriangle(7, 3, 6);
-            builder.AddTriangle(3, 9, 6);
-            builder.AddTriangle(2, 9, 3);
-            builder.AddTriangle(2, 4, 9);
-            builder.AddTriangle(2, 5, 4);
-            builder.AddTriangle(4, 5, 0);
-            builder.AddTriangle(5, 10, 0);
 
             return builder;
         }
