@@ -54,41 +54,51 @@ namespace Graphing.Generic.Native
         public NativeList<EdgeT> Edges;
         public NativeList<PolyT> Polygons;
 
-        public IEnumerable<EdgeT> WalkPolygonEdges(IPolygon poly)
+        public static int GetPolygonVertexCount(NativeList<EdgeT> edges, PolyT poly)
+		{
+            var count = 0;
+            foreach (var _ in WalkPolygonEdges(edges, poly))
+                count++;
+            return count;
+		}
+        public static IEnumerable<EdgeT> WalkPolygonEdges(NativeList<EdgeT> edges, PolyT poly)
         {
-
             var start = poly.Edge;
             var current = start;
             do
             {
-                var temp = Edges[current];
+                var temp = edges[current];
                 yield return temp;
                 current = temp.Next;
             } while (current != start);
         }
-        public IEnumerable<VertexT> WalkPolygonVertexes(IPolygon poly)
-		{
-            foreach (var edge in WalkPolygonEdges(poly))
-                yield return Nodes[edge.Node];
-		}
+        public IEnumerable<EdgeT> WalkPolygonEdges(PolyT poly) => WalkPolygonEdges(Edges, poly);
+        public static IEnumerable<VertexT> WalkPolygonVertexes(NativeList<EdgeT> edges, NativeList<VertexT> nodes, PolyT poly)
+        {
+            foreach (var edge in WalkPolygonEdges(edges, poly))
+                yield return nodes[edge.Node];
+        }
+        public IEnumerable<VertexT> WalkPolygonVertexes(PolyT poly) => WalkPolygonVertexes(Edges, Nodes, poly);
 
-        public IEnumerable<EdgeT> WalkVertexEdges(IVertex vertex)
+        public static IEnumerable<EdgeT> WalkVertexEdges(NativeList<EdgeT> edges, VertexT vertex)
         {
 
             var start = vertex.Edge;
             var current = start;
             do
             {
-                var temp = Edges[current];
+                var temp = edges[current];
                 yield return temp;
-                current = Edges[temp.Twin].Next;
+                current = edges[temp.Twin].Next;
             } while (current != start);
         }
-        public IEnumerable<PolyT> WalkVertexPolygons(IVertex vertex)
+        public IEnumerable<EdgeT> WalkVertexEdges(VertexT vertex) => WalkVertexEdges(Edges, vertex);
+        public static IEnumerable<PolyT> WalkVertexPolygons(NativeList<EdgeT> edges, NativeList<PolyT> polygons, VertexT vertex)
         {
-            foreach (var edge in WalkVertexEdges(vertex))
-                yield return Polygons[edge.Poly];
+            foreach (var edge in WalkVertexEdges(edges, vertex))
+                yield return polygons[edge.Poly];
         }
+        public IEnumerable<PolyT> WalkVertexPolygons(VertexT vertex) => WalkVertexPolygons(Edges, Polygons, vertex);
 
         //public GraphT Dual<GraphT>() where GraphT : Graph<PolyT, EdgeT, VertexT>, new()
         //{

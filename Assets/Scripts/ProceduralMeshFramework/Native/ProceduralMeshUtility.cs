@@ -1,4 +1,10 @@
-﻿using System.Collections.Generic;
+﻿using Graphing.Generic.Native;
+using Graphing.Position.Generic.Native;
+using Graphing.Position.Native;
+using System;
+using System.Collections.Generic;
+using Unity.Collections;
+using Unity.Jobs;
 using UnityEngine;
 
 namespace ProceduralMeshFramework.Native
@@ -33,6 +39,7 @@ namespace ProceduralMeshFramework.Native
                 }
             }
         }
+
 
         public static void ModifyRadius(ProceduralMeshBuilder PMB, float scale)
         {
@@ -112,6 +119,38 @@ namespace ProceduralMeshFramework.Native
                 }
             }
         }
+
+		public struct HardSubdivideJob<TPoly,TEdge,TVertex,TData> : IJobParallelFor
+             where TPoly : struct, IPolygon
+             where TEdge : struct, IEdge
+             where TVertex : struct, IVertexData<TData>
+             where TData : struct, IPositionData
+        {
+            [ReadOnly]
+            public NativeList<TPoly> Polygons;
+            [ReadOnly]
+            public NativeList<TEdge> Edges;
+            [ReadOnly]
+            public NativeList<TVertex> Vertexes;
+
+            [WriteOnly]
+            public NativeList<TPoly> PolygonsOut;
+            [WriteOnly]
+            public NativeList<TEdge> EdgesOut;
+            [WriteOnly]
+            public NativeList<TVertex> VertexesOut;
+
+            public void Execute(int index)
+			{
+                var poly = Polygons[index];
+                var count = Graph<TPoly, TEdge, TVertex>.GetPolygonVertexCount(Edges, poly);                
+			}
+            //public void Triangle(TPoly)
+		}
+		public static void SubdivideSoft(PositionGraph graph, int divisions, bool slerp, float precision = 0.0001f)
+		{
+            throw new NotImplementedException();
+		}
 
         public static void SubdivideSoft(ProceduralMeshBuilder builder, int divisions, bool slerp = false,
             float precision = 0.001f)
