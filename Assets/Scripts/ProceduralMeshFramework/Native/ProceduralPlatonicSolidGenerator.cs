@@ -5,10 +5,10 @@ using System.Collections.Generic;
 using Unity.Mathematics;
 using UnityEngine;
 
-namespace ProceduralMeshFramework.NNative
+namespace ProceduralMeshFramework.NNatives
 {
 
-    public static class SharedUtil 
+    public static class SharedUtil
     {
         public static int[] CalculateTwins(IList<int> Indexes, int PolyCount)
         {
@@ -83,29 +83,29 @@ namespace ProceduralMeshFramework.NNative
             for (var i = 0; i < nodes.Length; i++)
                 nodes[i] = -1;
             for (var i = 0; i < Indexes.Count && found < SoftVertexCount; i++)
-			{
+            {
                 var index = Indexes[i];
                 if (nodes[index] == -1)
                 {
                     nodes[index] = i;
                     found++;
                 }
-			}
+            }
             return nodes;
         }
         public static int[] Flatten(int[,] arr)
-		{
+        {
             var u = arr.GetLength(0);
-            var v =arr.GetLength(1);
+            var v = arr.GetLength(1);
             var flat = new int[u * v];
-            for(var i = 0; i < flat.Length; i++)
-			{
+            for (var i = 0; i < flat.Length; i++)
+            {
                 var j = i / u;
                 var k = i % u;
                 flat[i] = arr[j, k];
-			}
+            }
             return flat;
-		}
+        }
 
         public static PositionGraph BuildGraph(IList<float3> Vertexes, IList<int> Indexes, IList<int> Twins, IList<int> NodeEdges, IList<int> PolyEdges)
         {
@@ -262,7 +262,7 @@ namespace ProceduralMeshFramework.NNative
         }
     }
 
-    
+
 
 
     public static class Tetrahedron
@@ -312,10 +312,10 @@ namespace ProceduralMeshFramework.NNative
         /// </summary>
         private static readonly int[,] _Indexes = new int[PolyCount, PolyVertCount]
         {
-            { 0, 1, 2 },
-            { 3, 1, 0 },
-            { 0, 2, 3 },
-            { 3, 2, 1 },
+             { 0, 1, 2 },// 1st Tri
+             { 3, 1, 0 },// 2nd Tri
+             {0, 2, 3 },// 3rd Tri
+             {3, 2, 1 },// 4th Tri
         };
         private static readonly int[] Indexes = SharedUtil.Flatten(_Indexes);
         private static readonly int[] Twins = SharedUtil.CalculateTwins(Indexes, PolyCount);
@@ -327,7 +327,79 @@ namespace ProceduralMeshFramework.NNative
         /// Builds a soft graph.
         /// </summary>
         /// <returns></returns>
-        public static PositionGraph BuildGraph() => SharedUtil.BuildGraph(Vertexes, Indexes, Twins, NodeEdges, PolyEdges);
+        public static PositionGraph BuildGraph() => SharedUtil.BuildGraph(Vertexes, Indexes, NodeEdges, PolyEdges, Twins);
+    }
+    public static class Octohedron
+    {
+        private const float
+            SQRT_2 = SharedUtil.SQRT_2,
+            SQRT_3 = SharedUtil.SQRT_3;
+
+        //ALL Shapes have a circumradius of 1, to convert to their original circumradius, multiply by the circumradius, to conver to their mid or inradius, divide by the circumradius (when at 1), then multiply by the inradius 
+        //Dont know what these are? Look at this (https://en.wikipedia.org/wiki/Platonic_solid) bout midway down the page
+        public const float
+            CircumRadius = SQRT_2,
+            MidRadius = 1,
+            InRadius = SQRT_2 / SQRT_3;
+
+        public static float GetRadius(RadiusType radius)
+        {
+            switch (radius)
+            {
+                case RadiusType.Circumradius:
+                    return CircumRadius;
+                case RadiusType.Midradius:
+                    return MidRadius;
+                case RadiusType.Inradius:
+                    return InRadius;
+                case RadiusType.Normalized:
+                    return 1f;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(radius));
+            }
+        }
+
+        public const int PolyCount = 8;
+        public const int SoftVertCount = 6;
+        public const int PolyVertCount = 3;
+        private static readonly float3[] Vertexes = new float3[SoftVertCount]
+        {
+            math.normalize(new float3(1f, 0f, 0f)),
+            math.normalize(new float3(0f, 1f, 0f)),
+            math.normalize(new float3(0f, 0f, 1f)),
+            math.normalize(new float3(-1f, 0f, 0f)),
+            math.normalize(new float3(0f, -1f, 0f)),
+            math.normalize(new float3(0f, 0f, -1f))
+        };
+        /// <summary>
+        /// 4 Triangles ~ [PolygonIndex, VertexIndex]
+        /// Order matters if converting to mesh, not converting to graph
+        /// </summary>
+        /// <remarks>Changing this will require Twins, NodeEdges, & PolyEdges to be updated.</remarks>
+        private static readonly int[,] _Indexes = new int[PolyCount, PolyVertCount]
+        {
+            {0, 1, 2},
+            {0, 2, 4},
+            {0, 4, 5},
+            {0, 5, 1},
+            {3, 2, 1},
+            {3, 4, 2},
+            {3, 5, 4},
+            {3, 1, 5},
+        };
+        private static readonly int[] Indexes = SharedUtil.Flatten(_Indexes);
+
+        //Hardcoded to avoid writing an algorithm for something that could be calculated once; this does mean this breaks if we change the INDEXES
+        private static readonly int[] Twins = SharedUtil.CalculateTwins(Indexes, PolyCount);
+        private static readonly int[] NodeEdges = SharedUtil.CalculateNodeEdges(Indexes, PolyCount);
+        private static readonly int[] PolyEdges = SharedUtil.CalculatePolyEdges(PolyVertCount, PolyCount);
+
+
+        /// <summary>
+        /// Builds a soft graph.
+        /// </summary>
+        /// <returns></returns>
+        public static PositionGraph BuildGraph() => SharedUtil.BuildGraph(Vertexes, Indexes, NodeEdges, PolyEdges, Twins);
     }
 
     public static class ProceduralPlatonicSolidGenerator
@@ -346,15 +418,6 @@ namespace ProceduralMeshFramework.NNative
 
         
 
-        private static readonly float3[] OctahedronVerticies = new float3[6]
-        {
-            math.normalize(new float3(1f, 0f, 0f)),
-            math.normalize(new float3(0f, 1f, 0f)),
-            math.normalize(new float3(0f, 0f, 1f)),
-            math.normalize(new float3(-1f, 0f, 0f)),
-            math.normalize(new float3(0f, -1f, 0f)),
-            math.normalize(new float3(0f, 0f, -1f))
-        };
 
         private static readonly float3[] CubeVerticies = new float3[8]
         {
@@ -413,71 +476,12 @@ namespace ProceduralMeshFramework.NNative
             math.normalize(new float3(-PHI, 0f, -INV_PHI)) //19            
         };
 
-        private static readonly ProceduralMeshBuilder TetrahedronPrototype = BuildTetrahedronPrototype();
-
-        private static readonly ProceduralMeshBuilder OctahedronPrototype = BuildOctahedronPrototype();
 
         private static readonly ProceduralMeshBuilder CubePrototype = BuildCubePrototype();
 
         private static readonly ProceduralMeshBuilder IcosahedronPrototype = BuildIcosahedronPrototype();
 
         private static readonly ProceduralMeshBuilder DodecahedronPrototype = BuildDodecahedronPrototype();
-
-        private static float3 ModifyVertex(float3 proceduralVertex,
-            Quaternion rotation, /* bool normalize = true,*/ bool right = false)
-        {
-            //if (normalize)
-            //    vertex.Position = vertex.Position;
-            proceduralVertex = rotation * proceduralVertex;
-            proceduralVertex.Normal = proceduralVertex.Position;
-            var vertexRotation = Quaternion.FromToRotation(Vector3.forward, proceduralVertex.Normal);
-            proceduralVertex.Tangent = vertexRotation * Vector3.right;
-            proceduralVertex.RightHanded = right;
-            return proceduralVertex;
-        }
-
-        private static ProceduralMeshBuilder BuildTetrahedronPrototype()
-        {
-            var verts = TetrahedronVerticies;
-            var builder = new ProceduralMeshBuilder();
-            var rotation = Quaternion.FromToRotation(Vector3.up, verts[0].Position);
-            var vertexCount = verts.Length;
-
-            for (var i = 0; i < vertexCount; i++)
-            {
-                var modifiedVertex = ModifyVertex(verts[i], rotation);
-                builder.AddVertex(modifiedVertex);
-            }
-
-
-            return builder;
-        }
-
-        private static ProceduralMeshBuilder BuildOctahedronPrototype()
-        {
-            var verts = OctahedronVerticies;
-            var builder = new ProceduralMeshBuilder();
-            var rotation = Quaternion.FromToRotation(Vector3.up, verts[0].Position);
-            var vertexCount = verts.Length;
-
-            for (var i = 0; i < vertexCount; i++)
-            {
-                var modifiedVertex = ModifyVertex(verts[i], rotation);
-                builder.AddVertex(modifiedVertex);
-            }
-
-            builder.AddTriangle(0, 1, 2);
-            builder.AddTriangle(0, 2, 4);
-            builder.AddTriangle(0, 4, 5);
-            builder.AddTriangle(0, 5, 1);
-
-            builder.AddTriangle(3, 2, 1);
-            builder.AddTriangle(3, 4, 2);
-            builder.AddTriangle(3, 5, 4);
-            builder.AddTriangle(3, 1, 5);
-
-            return builder;
-        }
 
         private static ProceduralMeshBuilder BuildCubePrototype()
         {
